@@ -1,0 +1,64 @@
+{
+  "name": "cosmospay.js",
+  "version": "1.0.0",
+  "description": "A powerful, object-oriented JavaScript/TypeScript SDK for the Cosmos Pay Payments API (Stellar SEP-7 payment intents, webhooks, products, customers and analytics) — discord.js-style atomic client.",
+  "keywords": [
+    "cosmos",
+    "cosmos-pay",
+    "stellar",
+    "sep-7",
+    "payments",
+    "payment-intents",
+    "webhooks",
+    "sdk",
+    "api",
+    "client",
+    "typescript"
+  ],
+  "license": "MIT",
+  "author": "Cosmos Pay",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "pretest": "npm run build",
+    "test": "node --test \"test/*.test.mjs\"",
+    "test:watch": "node --test --watch \"test/*.test.mjs\"",
+    "prepublishOnly": "npm run build",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "rimraf": "^6.0.1",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  },
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  }
+}
