@@ -1,6 +1,6 @@
 // Basic usage — create a payment intent, list and validate.
 // Run with: node examples/basic.mjs  (after `npm run build`)
-import { Client } from 'cosmospay.js';
+import { Client } from '@cosmosapp/pay_sdk';
 
 // You only provide your API key — the gateway is handled for you.
 const client = new Client({ apiKey: process.env.COSMOS_PAY_API_KEY });

@@ -150,7 +150,7 @@ export class REST extends EventEmitter {
   private buildHeaders(extra?: Record<string, string>): Record<string, string> {
     const headers: Record<string, string> = {
       Accept: 'application/json',
-      'User-Agent': `cosmospay.js/${version}`,
+      'User-Agent': `@cosmosapp/pay_sdk/${version}`,
       ...this.extraHeaders,
     };
     if (this.apiKey) {

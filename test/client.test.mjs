@@ -46,7 +46,7 @@ test('sends Authorization + apikey headers built from the apiKey', async () => {
   const { headers } = fetch.calls[0];
   assert.equal(headers['Authorization'], 'Bearer dv_secret_key');
   assert.equal(headers['apikey'], 'dv_secret_key');
-  assert.match(headers['User-Agent'], /cosmospay\.js\//);
+  assert.match(headers['User-Agent'], /@cosmosapp\/pay_sdk\//);
 });
 
 test('setApiKey swaps the credential for later requests', async () => {

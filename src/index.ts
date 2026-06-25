@@ -1,8 +1,8 @@
 /**
- * cosmospay.js — object-oriented SDK for the Cosmos Pay Payments API.
+ * @cosmosapp/pay_sdk — object-oriented SDK for the Cosmos Pay Payments API.
  *
  * @example
- * import { Client } from 'cosmospay.js';
+ * import { Client } from '@cosmosapp/pay_sdk';
  * const client = new Client({ baseURL: 'https://gateway.example.com', apiKey: '...' });
  */
 

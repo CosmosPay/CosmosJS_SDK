@@ -1,17 +1,17 @@
 <div align="center">
 
-# 🪐 cosmospay.js
+# 🪐 @cosmosapp/pay_sdk
 
 **The object-oriented JavaScript / TypeScript SDK for the [Cosmos Pay](#) Payments API**
 
 Stellar **SEP-7 payment intents** · **webhooks** · **products** · **customers** · **analytics**
 
 [![CI](https://github.com/Emanuel250YT/cosmosjs_sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/Emanuel250YT/cosmosjs_sdk/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/cosmospay.js.svg?style=flat-square&color=7c3aed)](https://www.npmjs.com/package/cosmospay.js)
-[![npm downloads](https://img.shields.io/npm/dm/cosmospay.js.svg?style=flat-square&color=7c3aed)](https://www.npmjs.com/package/cosmospay.js)
-[![types](https://img.shields.io/npm/types/cosmospay.js.svg?style=flat-square&color=3178c6)](https://www.npmjs.com/package/cosmospay.js)
-[![node](https://img.shields.io/node/v/cosmospay.js.svg?style=flat-square&color=339933)](https://nodejs.org)
-[![license](https://img.shields.io/npm/l/cosmospay.js.svg?style=flat-square&color=22c55e)](./LICENSE)
+[![npm version](https://img.shields.io/npm/v/@cosmosapp/pay_sdk?style=flat-square&color=7c3aed)](https://www.npmjs.com/package/@cosmosapp/pay_sdk)
+[![npm downloads](https://img.shields.io/npm/dm/@cosmosapp/pay_sdk?style=flat-square&color=7c3aed)](https://www.npmjs.com/package/@cosmosapp/pay_sdk)
+[![types](https://img.shields.io/npm/types/@cosmosapp/pay_sdk?style=flat-square&color=3178c6)](https://www.npmjs.com/package/@cosmosapp/pay_sdk)
+[![node](https://img.shields.io/node/v/@cosmosapp/pay_sdk?style=flat-square&color=339933)](https://nodejs.org)
+[![license](https://img.shields.io/npm/l/@cosmosapp/pay_sdk?style=flat-square&color=22c55e)](./LICENSE)
 
 </div>
 
@@ -21,7 +21,7 @@ Designed in the style of **discord.js**: one atomic `Client`, every resource spl
 manager, and rich structure classes that can act on themselves.
 
 ```ts
-import { Client } from 'cosmospay.js';
+import { Client } from '@cosmosapp/pay_sdk';
 
 // You only bring your API key — the gateway URL and other internals are pre-configured for you.
 const client = new Client({ apiKey: process.env.COSMOS_PAY_API_KEY });
@@ -60,11 +60,11 @@ console.log(intent.uri); // web+stellar:pay?destination=...
 ## 📦 Installation
 
 ```bash
-npm install cosmospay.js
+npm install @cosmosapp/pay_sdk
 # or
-pnpm add cosmospay.js
+pnpm add @cosmosapp/pay_sdk
 # or
-yarn add cosmospay.js
+yarn add @cosmosapp/pay_sdk
 ```
 
 Requires **Node.js ≥ 18** (for the global `fetch`). On older runtimes pass a `fetch` polyfill via the `fetch` option.
@@ -91,7 +91,7 @@ The internal defaults live in `Client.shared` and can be overridden globally (on
 useful for self-hosting or pointing at a staging gateway:
 
 ```ts
-import { Client } from 'cosmospay.js';
+import { Client } from '@cosmosapp/pay_sdk';
 
 Client.shared.baseURL = 'https://staging.cosmospay.io';
 // every client created afterwards inherits this
@@ -117,7 +117,7 @@ normal integration never sets them.
 ## 🚀 Quick start
 
 ```ts
-import { Client } from 'cosmospay.js';
+import { Client } from '@cosmosapp/pay_sdk';
 
 const client = new Client({ apiKey: process.env.COSMOS_PAY_API_KEY });
 
@@ -267,7 +267,7 @@ Prefer to handle dispatch yourself? Use the lower-level helpers. The dispatcher 
 `X-Cosmos-Signature: t=<unixSeconds>,v1=<hmacSha256>`:
 
 ```ts
-import { Webhooks } from 'cosmospay.js';
+import { Webhooks } from '@cosmosapp/pay_sdk';
 
 const event = Webhooks.constructEvent(
   rawBody,                           // RAW body (Buffer or string)
@@ -317,7 +317,7 @@ const ready = await client.health.readiness(); // { status, info, details }
 ## ⚠️ Error handling
 
 ```ts
-import { CosmosPayAPIError, CosmosPayRequestError } from 'cosmospay.js';
+import { CosmosPayAPIError, CosmosPayRequestError } from '@cosmosapp/pay_sdk';
 
 try {
   await client.paymentIntents.fetch('missing');
@@ -373,7 +373,7 @@ import {
   WebhookEventType,
   type CreateTxPaymentIntentOptions,
   type PaymentIntentData,
-} from 'cosmospay.js';
+} from '@cosmosapp/pay_sdk';
 ```
 
 ## 🧪 Running the tests locally
@@ -412,12 +412,17 @@ This repo ships two GitHub Actions workflows under [`.github/workflows/`](./.git
 | Workflow | Trigger | What it does |
 | -------- | ------- | ------------ |
 | **`ci.yml`** | every push & PR to `main` | `npm ci` → typecheck → build → test, on Node **18 / 20 / 22** |
-| **`release.yml`** | a published **GitHub Release** (or manual run) | reinstalls, typechecks, tests, then `npm publish --provenance` |
+| **`release.yml`** | every push to `main` (or manual run) | **auto-detects a version bump** → typecheck → test → `npm publish --provenance`; skips if the version is unchanged |
 
-### One-time setup
+Publishing is **fully automatic**: there's no Release to create and no tag to push. `release.yml`
+runs on every push to `main`, compares `package.json`'s version against what's already on npm, and
+publishes only when it's new. Unchanged version → the job skips cleanly (no red ❌).
+
+### One-time setup (the GitHub environment variable)
 
 1. **Create an npm automation token** — npm → _Access Tokens_ → _Generate New Token_ → **Automation**
-   (or a _Granular_ token with publish rights for `cosmospay.js`).
+   (or a _Granular_ token with publish rights for `@cosmosapp/pay_sdk`). The token's account must be a
+   member of the **`@cosmosapp`** npm organization.
 2. **Add it to GitHub** — repo → _Settings_ → _Secrets and variables_ → _Actions_ →
    **New repository secret**, named exactly:
 
@@ -426,26 +431,24 @@ This repo ships two GitHub Actions workflows under [`.github/workflows/`](./.git
    ```
 
    The `release.yml` job reads it as `NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}`.
-   It's scoped to the `release` [Environment](https://docs.github.com/actions/deployments/managing-environments-for-deployment) —
-   create an Environment called **`release`** (or remove the `environment: release` line to use a plain repo secret).
+   It's scoped to a `release` [Environment](https://docs.github.com/actions/deployments/managing-environments-for-deployment) —
+   create an Environment called **`release`** and add the secret there (or remove the
+   `environment: release` line from the workflow to use a plain repo secret instead).
 
-### Cutting a release
+### Shipping a new version
 
 ```bash
-# 1. bump the version (also creates a git tag)
-npm version patch        # or minor / major
-
-# 2. push the commit + tag
-git push --follow-tags
-
-# 3. publish the release on GitHub (this fires release.yml)
-gh release create "v$(node -p "require('./package.json').version")" --generate-notes
+npm version patch        # or minor / major — bumps package.json (+ git tag)
+git push --follow-tags   # push to main → release.yml publishes automatically
 ```
 
-The publish job **refuses to republish an existing version**, so a forgotten `npm version` bump fails
-fast with a clear message instead of erroring mid-publish. Packages are published with
+That's it. The job **never republishes an existing version** (it checks npm first), so re-running or
+pushing unrelated commits is always safe. Packages ship with
 [**npm provenance**](https://docs.npmjs.com/generating-provenance-statements) (`id-token: write` +
 `--provenance`), giving consumers a verifiable link back to this repo and commit.
+
+> **First publish:** the `@cosmosapp` org and the `NPM_TOKEN` secret must exist before the first run.
+> Because the name is scoped, `publishConfig.access` is set to `public` so it isn't published private.
 
 > Only `dist/`, `README.md` and `LICENSE` are published (`package.json#files`) — source, tests and
 > workflows never ship in the tarball. Verify locally with `npm pack --dry-run`.

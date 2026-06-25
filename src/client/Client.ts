@@ -96,7 +96,7 @@ export interface Client {
  * resource through its own manager, in the style of discord.js.
  *
  * @example
- * import { Client } from 'cosmospay.js';
+ * import { Client } from '@cosmosapp/pay_sdk';
  *
  * // The user only provides their API key — the gateway is handled for them.
  * const client = new Client({ apiKey: process.env.COSMOS_PAY_API_KEY });

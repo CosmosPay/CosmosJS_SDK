@@ -1,12 +1,13 @@
 name: Release
 
-# Publishes to npm when a GitHub Release is published. Bump the version in
-# package.json, push a tag, and create a Release — this workflow does the rest.
-# Can also be run manually from the Actions tab (workflow_dispatch).
+# Fully automatic npm publish. On every push to `main` it compares the version in
+# package.json against what's already on npm: if it's new, it builds, tests and
+# publishes; if it's unchanged, it skips cleanly (no failure). So the entire
+# release flow is just: bump the version, commit, push.
 on:
-  release:
-    types: [published]
-  workflow_dispatch:
+  push:
+    branches: [main]
+  workflow_dispatch: # allow a manual run from the Actions tab too
 
 concurrency:
   group: release
@@ -35,23 +36,35 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Guard — version not already on npm
+      - name: Detect whether this version is already published
+        id: check
         run: |
           NAME=$(node -p "require('./package.json').name")
           VERSION=$(node -p "require('./package.json').version")
-          echo "Releasing $NAME@$VERSION"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
-            echo "::error::$NAME@$VERSION is already published. Bump the version in package.json."
-            exit 1
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "✅ $NAME@$VERSION is already on npm — nothing to publish."
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+            echo "📦 $NAME@$VERSION is new — will build, test and publish."
           fi
 
       - name: Typecheck
+        if: steps.check.outputs.published == 'false'
         run: npm run typecheck
 
       - name: Test (builds via pretest)
+        if: steps.check.outputs.published == 'false'
         run: npm test
 
-      - name: Publish
+      - name: Publish to npm
+        if: steps.check.outputs.published == 'false'
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Summary
+        if: steps.check.outputs.published == 'false'
+        run: echo "🚀 Published ${{ steps.check.outputs.name }}@${{ steps.check.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"

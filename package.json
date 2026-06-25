@@ -1,5 +1,5 @@
 {
-  "name": "cosmospay.js",
+  "name": "@cosmosapp/pay_sdk",
   "version": "1.0.0",
   "description": "A powerful, object-oriented JavaScript/TypeScript SDK for the Cosmos Pay Payments API (Stellar SEP-7 payment intents, webhooks, products, customers and analytics) — discord.js-style atomic client.",
   "keywords": [

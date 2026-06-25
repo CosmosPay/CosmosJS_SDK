@@ -2,7 +2,7 @@
 // built-in HTTP handler (signature verification included).
 // Run with: node examples/webhook-server.mjs  (after `npm run build`)
 import { createServer } from 'node:http';
-import { Client } from 'cosmospay.js';
+import { Client } from '@cosmosapp/pay_sdk';
 
 const client = new Client({
   apiKey: process.env.COSMOS_PAY_API_KEY ?? 'dv_demo',
