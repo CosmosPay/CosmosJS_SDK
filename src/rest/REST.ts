@@ -18,7 +18,8 @@ export type FetchLike = typeof fetch;
 export interface RESTOptions {
   /**
    * Base URL of the Cosmos Pay gateway (no trailing slash), e.g.
-   * `https://gateway.example.com`. The version segment is appended automatically.
+   * `https://api.cosmospay.lat/cosmos-api`. The version segment is appended
+   * automatically.
    */
   baseURL: string;
   /**

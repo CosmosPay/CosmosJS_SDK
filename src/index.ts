@@ -3,7 +3,8 @@
  *
  * @example
  * import { Client } from '@cosmosapp/pay_sdk';
- * const client = new Client({ baseURL: 'https://gateway.example.com', apiKey: '...' });
+ * // The gateway URL is pre-configured — you only bring your API key.
+ * const client = new Client({ apiKey: process.env.COSMOS_PAY_API_KEY });
  */
 
 // Client

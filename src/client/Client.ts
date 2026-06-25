@@ -110,8 +110,8 @@ export class Client extends EventEmitter {
 
   /**
    * Process-wide shared defaults maintained by Cosmos Pay (gateway URL, version,
-   * internal secrets). Mutate once at startup to change them for every client:
-   * `Client.shared.baseURL = 'https://staging.cosmospay.io'`.
+   * internal secrets). Mutate once at startup to change them for every client
+   * (e.g. self-hosting): `Client.shared.baseURL = 'https://gateway.your-domain.com'`.
    */
   public static readonly shared: SharedConfig = shared;
 

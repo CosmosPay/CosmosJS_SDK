@@ -93,8 +93,9 @@ useful for self-hosting or pointing at a staging gateway:
 ```ts
 import { Client } from '@cosmosapp/pay_sdk';
 
-Client.shared.baseURL = 'https://staging.cosmospay.io';
+Client.shared.baseURL = 'https://gateway.your-domain.com'; // e.g. a self-hosted gateway
 // every client created afterwards inherits this
+// (the default is the public gateway: https://api.cosmospay.lat/cosmos-api)
 ```
 
 Or per-client (rarely needed):
@@ -355,7 +356,7 @@ new Client({
   fetch: customFetch,            // custom fetch implementation
 
   // Advanced / internal — pre-filled from Client.shared, rarely overridden:
-  baseURL: 'https://...',        // gateway URL
+  baseURL: 'https://api.cosmospay.lat/cosmos-api', // gateway URL (default)
   version: 'v1',                 // route prefix
   gatewaySecret: '...',          // direct access (X-Gateway-Secret)
   consumerUsername: '...',       // direct access (X-Consumer-Username)

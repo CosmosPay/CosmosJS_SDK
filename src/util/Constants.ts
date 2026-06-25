@@ -5,8 +5,13 @@ export const version = '1.0.0';
  * Default base URL of the Cosmos Pay gateway. Maintained by Cosmos Pay — users
  * never need to set this; it's part of the {@link shared} configuration. Override
  * only when self-hosting or pointing at a staging gateway.
+ *
+ * This is the public APISIX gateway: requests under `/cosmos-api/*` are
+ * authenticated (API key) and proxied to the Payments API. The version segment
+ * (`/v1`, see {@link DEFAULT_VERSION}) is appended by the REST layer, producing
+ * e.g. `https://api.cosmospay.lat/cosmos-api/v1/payment-intents/pay`.
  */
-export const DEFAULT_BASE_URL = 'https://api.cosmospay.io';
+export const DEFAULT_BASE_URL = 'https://api.cosmospay.lat/cosmos-api';
 
 /** Default API version segment prefixed to every route (`/v1/...`). */
 export const DEFAULT_VERSION = 'v1';
