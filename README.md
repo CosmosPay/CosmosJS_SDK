@@ -6,7 +6,7 @@
 
 Stellar **SEP-7 payment intents** · **webhooks** · **products** · **customers** · **analytics**
 
-[![CI](https://github.com/Emanuel250YT/cosmosjs_sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/Emanuel250YT/cosmosjs_sdk/actions/workflows/ci.yml)
+[![CI](https://github.com/CosmosPay/CosmosJS_SDK/actions/workflows/ci.yml/badge.svg)](https://github.com/CosmosPay/CosmosJS_SDK/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/@cosmosapp/pay_sdk?style=flat-square&color=7c3aed)](https://www.npmjs.com/package/@cosmosapp/pay_sdk)
 [![npm downloads](https://img.shields.io/npm/dm/@cosmosapp/pay_sdk?style=flat-square&color=7c3aed)](https://www.npmjs.com/package/@cosmosapp/pay_sdk)
 [![types](https://img.shields.io/npm/types/@cosmosapp/pay_sdk?style=flat-square&color=3178c6)](https://www.npmjs.com/package/@cosmosapp/pay_sdk)

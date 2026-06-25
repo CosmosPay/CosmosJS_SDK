@@ -17,6 +17,14 @@
   ],
   "license": "MIT",
   "author": "Cosmos Pay",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CosmosPay/CosmosJS_SDK.git"
+  },
+  "bugs": {
+    "url": "https://github.com/CosmosPay/CosmosJS_SDK/issues"
+  },
+  "homepage": "https://github.com/CosmosPay/CosmosJS_SDK#readme",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
