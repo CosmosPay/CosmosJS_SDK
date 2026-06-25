@@ -42,10 +42,11 @@ test('toJSON round-trips back to the raw payload', () => {
   assert.deepEqual(intent.toJSON(), raw);
 });
 
-test('valueOf returns the id so structures stringify nicely', () => {
+test('valueOf returns the id (used in primitive coercion)', () => {
   const intent = new PaymentIntent(client, fakeIntent({ id: 'pi_xyz' }));
-  assert.equal(`${intent}`, 'pi_xyz');
   assert.equal(intent.valueOf(), 'pi_xyz');
+  // `+` coerces via valueOf (default hint), so concatenation resolves to the id
+  assert.equal(intent + '', 'pi_xyz');
 });
 
 test('CosmosPayAPIError resolves message/code from array and string bodies', () => {

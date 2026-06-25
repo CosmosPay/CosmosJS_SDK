@@ -44,15 +44,20 @@ export function jsonOnce(body) {
 function toResponse(result) {
   if (result instanceof Response) return result;
 
-  const status = result?.status ?? 200;
+  // Distinguish a response envelope (`{ status: 404, body, headers }`) from a
+  // bare JSON payload that merely happens to carry its own `status` field
+  // (payment intents do). Only a *numeric* status — or an explicit body/headers
+  // key — marks an envelope.
+  const hasEnvelope =
+    result &&
+    typeof result === 'object' &&
+    (typeof result.status === 'number' || 'body' in result || 'headers' in result);
+
+  const status = hasEnvelope ? result.status ?? 200 : 200;
   const headers = new Headers({
     'content-type': 'application/json',
-    ...(result?.headers ?? {}),
+    ...(hasEnvelope ? result.headers ?? {} : {}),
   });
-
-  // `{ status, body }` shape vs. a bare JSON object.
-  const hasEnvelope =
-    result && typeof result === 'object' && ('status' in result || 'body' in result);
   const payload = hasEnvelope ? result.body : result;
   const text = payload === undefined || payload === null ? '' : JSON.stringify(payload);
 

@@ -46,8 +46,8 @@
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "pretest": "npm run build",
-    "test": "node --test \"test/*.test.mjs\"",
-    "test:watch": "node --test --watch \"test/*.test.mjs\"",
+    "test": "node --test test/client.test.mjs test/rest.test.mjs test/payment-intents.test.mjs test/webhooks.test.mjs test/structures.test.mjs",
+    "test:watch": "node --test --watch test/client.test.mjs test/rest.test.mjs test/payment-intents.test.mjs test/webhooks.test.mjs test/structures.test.mjs",
     "prepublishOnly": "npm run build",
     "clean": "rimraf dist"
   },

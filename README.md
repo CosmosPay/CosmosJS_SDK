@@ -6,6 +6,7 @@
 
 Stellar **SEP-7 payment intents** · **webhooks** · **products** · **customers** · **analytics**
 
+[![CI](https://github.com/Emanuel250YT/cosmosjs_sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/Emanuel250YT/cosmosjs_sdk/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/cosmospay.js.svg?style=flat-square&color=7c3aed)](https://www.npmjs.com/package/cosmospay.js)
 [![npm downloads](https://img.shields.io/npm/dm/cosmospay.js.svg?style=flat-square&color=7c3aed)](https://www.npmjs.com/package/cosmospay.js)
 [![types](https://img.shields.io/npm/types/cosmospay.js.svg?style=flat-square&color=3178c6)](https://www.npmjs.com/package/cosmospay.js)
@@ -53,6 +54,7 @@ console.log(intent.uri); // web+stellar:pay?destination=...
 - [Configuration reference](#-configuration-reference)
 - [TypeScript](#-typescript)
 - [Running the tests locally](#-running-the-tests-locally)
+- [CI/CD & publishing](#-cicd--publishing)
 - [License](#-license)
 
 ## 📦 Installation
@@ -402,6 +404,51 @@ node --test test/webhooks.test.mjs
 ```
 
 > The `pretest` hook builds `dist/` first, so the tests exercise the exact artifact that gets published to npm.
+
+## 🤖 CI/CD & publishing
+
+This repo ships two GitHub Actions workflows under [`.github/workflows/`](./.github/workflows):
+
+| Workflow | Trigger | What it does |
+| -------- | ------- | ------------ |
+| **`ci.yml`** | every push & PR to `main` | `npm ci` → typecheck → build → test, on Node **18 / 20 / 22** |
+| **`release.yml`** | a published **GitHub Release** (or manual run) | reinstalls, typechecks, tests, then `npm publish --provenance` |
+
+### One-time setup
+
+1. **Create an npm automation token** — npm → _Access Tokens_ → _Generate New Token_ → **Automation**
+   (or a _Granular_ token with publish rights for `cosmospay.js`).
+2. **Add it to GitHub** — repo → _Settings_ → _Secrets and variables_ → _Actions_ →
+   **New repository secret**, named exactly:
+
+   ```
+   NPM_TOKEN
+   ```
+
+   The `release.yml` job reads it as `NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}`.
+   It's scoped to the `release` [Environment](https://docs.github.com/actions/deployments/managing-environments-for-deployment) —
+   create an Environment called **`release`** (or remove the `environment: release` line to use a plain repo secret).
+
+### Cutting a release
+
+```bash
+# 1. bump the version (also creates a git tag)
+npm version patch        # or minor / major
+
+# 2. push the commit + tag
+git push --follow-tags
+
+# 3. publish the release on GitHub (this fires release.yml)
+gh release create "v$(node -p "require('./package.json').version")" --generate-notes
+```
+
+The publish job **refuses to republish an existing version**, so a forgotten `npm version` bump fails
+fast with a clear message instead of erroring mid-publish. Packages are published with
+[**npm provenance**](https://docs.npmjs.com/generating-provenance-statements) (`id-token: write` +
+`--provenance`), giving consumers a verifiable link back to this repo and commit.
+
+> Only `dist/`, `README.md` and `LICENSE` are published (`package.json#files`) — source, tests and
+> workflows never ship in the tarball. Verify locally with `npm pack --dry-run`.
 
 ## 📄 License
 
