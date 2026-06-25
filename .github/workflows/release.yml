@@ -1,12 +1,21 @@
 name: Release
 
-# Fully automatic npm publish. On every push to `main` it compares the version in
-# package.json against what's already on npm: if it's new, it builds, tests and
-# publishes; if it's unchanged, it skips cleanly (no failure). So the entire
-# release flow is just: bump the version, commit, push.
+# Automatic versioned npm publish. On every push to `main` that touches the
+# library (src / build config / package.json), it resolves the next version
+# (auto-bumps PATCH from the latest version on npm, or respects a manual
+# minor/major bump in package.json), then: tests, builds, publishes to npm,
+# commits the version bump back, and creates a git tag + GitHub Release.
+#
+# So you never have to touch the version: just push. To force a minor/major,
+# bump package.json yourself and push — that exact version is published.
 on:
   push:
     branches: [main]
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'tsup.config.ts'
+      - 'tsconfig.json'
   workflow_dispatch: # allow a manual run from the Actions tab too
 
 concurrency:
@@ -14,17 +23,20 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
-  id-token: write # required for npm provenance / trusted publishing
+  contents: write # push the version-bump commit + tag, create the release
+  id-token: write # npm provenance / trusted publishing
 
 jobs:
   publish:
     name: Publish to npm
     runs-on: ubuntu-latest
-    environment: release # optional GitHub Environment; lets you scope the NPM_TOKEN secret
+    environment: release # optional GitHub Environment; scopes the NPM_TOKEN secret
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -36,35 +48,51 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Detect whether this version is already published
-        id: check
-        run: |
-          NAME=$(node -p "require('./package.json').name")
-          VERSION=$(node -p "require('./package.json').version")
-          echo "name=$NAME" >> "$GITHUB_OUTPUT"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
-            echo "published=true" >> "$GITHUB_OUTPUT"
-            echo "✅ $NAME@$VERSION is already on npm — nothing to publish."
-          else
-            echo "published=false" >> "$GITHUB_OUTPUT"
-            echo "📦 $NAME@$VERSION is new — will build, test and publish."
-          fi
+      - name: Resolve next version
+        id: ver
+        run: node scripts/release-version.mjs
 
       - name: Typecheck
-        if: steps.check.outputs.published == 'false'
         run: npm run typecheck
 
       - name: Test (builds via pretest)
-        if: steps.check.outputs.published == 'false'
         run: npm test
 
+      - name: Build
+        run: npm run build
+
+      - name: Update CHANGELOG
+        run: node scripts/update-changelog.mjs
+
+      - name: Commit version bump + changelog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json CHANGELOG.md
+          if git diff --staged --quiet; then
+            echo "Nothing to commit."
+          else
+            git commit -m "chore(release): v${{ steps.ver.outputs.version }} [skip ci]"
+            git push origin HEAD:main
+          fi
+
       - name: Publish to npm
-        if: steps.check.outputs.published == 'false'
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Create git tag
+        run: |
+          git tag "v${{ steps.ver.outputs.version }}"
+          git push origin "v${{ steps.ver.outputs.version }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: v${{ steps.ver.outputs.version }}
+          generate_release_notes: true # GitHub's auto notes; CHANGELOG.md is the in-repo record
+
       - name: Summary
-        if: steps.check.outputs.published == 'false'
-        run: echo "🚀 Published ${{ steps.check.outputs.name }}@${{ steps.check.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          echo "🚀 Published ${{ github.event.repository.name }}@${{ steps.ver.outputs.version }} (previous: ${{ steps.ver.outputs.previous }})" >> "$GITHUB_STEP_SUMMARY"
