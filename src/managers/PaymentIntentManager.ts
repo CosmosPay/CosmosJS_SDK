@@ -11,6 +11,7 @@ import type {
   ValidationOutcomeData,
 } from '@/types/index';
 import { BaseManager } from '@/managers/BaseManager';
+import { resolveIntentBody } from '@/common/intent-input';
 
 /** A page of payment intents plus its pagination metadata. */
 export interface PaymentIntentPage {
@@ -45,7 +46,7 @@ export class PaymentIntentManager extends BaseManager<PaymentIntent> {
     options: CreateTxPaymentIntentOptions,
   ): Promise<PaymentIntent> {
     const data = await this.rest.post<PaymentIntentData>(`${this.route}/tx`, {
-      body: options,
+      body: resolveIntentBody(options),
     });
     return this._add(new PaymentIntent(this.client, data));
   }
@@ -55,7 +56,7 @@ export class PaymentIntentManager extends BaseManager<PaymentIntent> {
     options: CreatePayPaymentIntentOptions,
   ): Promise<PaymentIntent> {
     const data = await this.rest.post<PaymentIntentData>(`${this.route}/pay`, {
-      body: options,
+      body: resolveIntentBody(options),
     });
     return this._add(new PaymentIntent(this.client, data));
   }

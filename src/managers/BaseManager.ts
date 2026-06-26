@@ -5,7 +5,7 @@ import type { REST } from '@/rest/REST';
 /**
  * Base class for all resource managers. Each manager owns a slice of the API
  * (payment intents, webhooks, ...) and a lightweight in-memory cache of the
- * structures it has materialized — mirroring discord.js's manager pattern.
+ * structures it has materialized — an atomic, per-resource manager pattern.
  *
  * Extends EventEmitter so managers that surface real-time events (e.g. the
  * webhook listener) can `emit`/`on` without extra plumbing.

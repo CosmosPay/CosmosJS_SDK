@@ -1,8 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import { Client, resolveShared, DEFAULT_BASE_URL } from '../dist/index.js';
 import { mockFetch, fakeIntent } from './helpers.mjs';
+
+const pkg = JSON.parse(
+  readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+);
 
 test('throws without an apiKey', () => {
   assert.throws(() => new Client({}), /apiKey/);
@@ -18,7 +23,7 @@ test('constructs with just an apiKey and wires every manager', () => {
   assert.ok(client.customers);
   assert.ok(client.analytics);
   assert.ok(client.health);
-  assert.equal(Client.version, '1.0.0');
+  assert.equal(Client.version, pkg.version);
 });
 
 test('falls back to the shared gateway URL when none is given', () => {

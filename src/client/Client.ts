@@ -93,7 +93,7 @@ export interface Client {
 
 /**
  * The main entry point of the SDK — a single, atomic client that exposes every
- * resource through its own manager, in the style of discord.js.
+ * resource through its own manager — an atomic, single-client design.
  *
  * @example
  * import { Client } from '@cosmosapp/pay_sdk';

@@ -17,10 +17,18 @@ Stellar **SEP-7 payment intents** · **webhooks** · **products** · **customers
 
 ---
 
-Designed in the style of **discord.js**: one atomic `Client`, every resource split into its own
-manager, and rich structure classes that can act on themselves.
+Designed to be **atomic**: one `Client`, every resource split into its own manager, and rich
+structure classes that can act on themselves.
+
+The SDK ships **two entry points** for the two halves of a payment:
+
+| Import | Where it runs | What it does |
+| ------ | ------------- | ------------ |
+| `@cosmosapp/pay_sdk` | **server** (Node ≥ 18) | Create & manage SEP-7 payment intents, webhooks, products, customers, analytics — everything that needs your secret API key. |
+| `@cosmosapp/pay_sdk/web` | **browser** | *Complete* an intent: auto-detect the user's Stellar wallet (Freighter, xBull, Rabet, LOBSTR, Albedo…), adapt the response into a transaction, request a signature and submit — **provider-agnostic, no provider argument**. |
 
 ```ts
+// ── server ──────────────────────────────────────────────────────────
 import { Client } from '@cosmosapp/pay_sdk';
 
 // You only bring your API key — the gateway URL and other internals are pre-configured for you.
@@ -30,14 +38,26 @@ const intent = await client.paymentIntents.createPay({ destination: 'G...', amou
 console.log(intent.uri); // web+stellar:pay?destination=...
 ```
 
+```ts
+// ── browser ─────────────────────────────────────────────────────────
+import { WebClient } from '@cosmosapp/pay_sdk/web';
+
+// `intent` is the payload your server returned above. No wallet/provider to choose.
+const webClient = new WebClient();
+const { txHash, account, wallet } = await webClient.pay(intent);
+console.log(`Paid via ${wallet} from ${account}: ${txHash}`);
+```
+
 ## ✨ Features
 
 - ✅ **TypeScript & JavaScript** — full typings, works in both **CJS** and **ESM**.
 - ✅ **Zero runtime dependencies** — native `fetch` + `node:crypto`, nothing else.
-- ✅ **Atomic, discord.js-style API** — `client.paymentIntents`, `client.webhooks`, …
+- ✅ **Atomic API** — one client, one manager per resource: `client.paymentIntents`, `client.webhooks`, …
 - ✅ **Self-acting structures** — `intent.validate()`, `endpoint.rotateSecret()`, `product.deactivate()`.
 - ✅ **Built-in webhook signature verification** + ready-made `http` / Express handlers.
 - ✅ **Resilient by default** — automatic retries, timeouts and structured errors.
+- ✅ **Browser web client** — auto-detects Freighter, xBull, Rabet, LOBSTR & Albedo, builds the
+  transaction from the SEP-7 response and signs it. Agnostic — you never pass a provider.
 
 ## 📑 Table of contents
 
@@ -45,7 +65,9 @@ console.log(intent.uri); // web+stellar:pay?destination=...
 - [Authentication](#-authentication)
 - [Quick start](#-quick-start)
 - [The client at a glance](#-the-client-at-a-glance)
+- [Web client (browser wallets)](#-web-client-browser-wallets)
 - [Payment intents](#-payment-intents)
+- [Typed assets, wallets & addresses](#-typed-assets-wallets--addresses)
 - [Webhooks](#-webhooks)
 - [Products & customers](#-products--customers)
 - [Analytics & health](#-analytics--health)
@@ -150,6 +172,165 @@ if (outcome.valid) console.log('Settled!', outcome.status);
 | `client.analytics`       | Read-only metrics & logs          | `summary` · `balances` · `apiLogs` · `webhookLogs` |
 | `client.health`          | Liveness / readiness probes       | `liveness` · `readiness` |
 
+## 🌐 Web client (browser wallets)
+
+The server SDK *creates* intents. The **web client** *completes* them in the user's browser.
+
+Stellar browser wallets (Freighter, xBull, Rabet, LOBSTR, Albedo…) **don't ingest SEP-7
+`web+stellar:` URIs from a dapp** — each exposes its own JS API. The web client bridges that gap: it
+**auto-detects** whichever wallet the user has, **adapts** the Cosmos Pay response into a concrete
+Stellar transaction (building the payment for `pay` intents, reusing the XDR for `tx` intents), asks
+the wallet to **sign**, and **submits** to Horizon (or POSTs to the SEP-7 `callback`). You never
+*have to* pass a provider — it's fully agnostic — but you **can** pin one when you want (see
+[Inspecting & choosing wallets](#inspecting--choosing-wallets)).
+
+```bash
+# the web client builds/submits transactions, so it needs the Stellar SDK (optional peer dep)
+npm install @cosmosapp/pay_sdk @stellar/stellar-sdk
+```
+
+### The typical flow
+
+1. **Server** creates the intent (with your secret key) and sends the payload to your frontend.
+2. **Browser** completes it — one call:
+
+```ts
+import { WebClient } from '@cosmosapp/pay_sdk/web';
+
+const webClient = new WebClient();           // auto-detects the wallet
+
+// `intent` may be the PaymentIntent payload from your server, a PaymentIntent
+// instance, or even the raw `web+stellar:` URI string.
+const result = await webClient.pay(intent);
+
+console.log(result.wallet);    // 'freighter' | 'xbull' | 'rabet' | 'lobstr' | 'albedo' | ...
+console.log(result.account);   // the G... account that signed
+console.log(result.txHash);    // the on-chain transaction hash
+console.log(result.submitted); // true
+```
+
+3. Report `result.txHash` back to your server and finalize with `intent.validate(txHash)` (or call
+   `webClient.validate(...)`, see below).
+
+### Supported wallets
+
+Auto-detected with **zero config** (they inject a browser global):
+
+| Wallet | id | Detection |
+| ------ | -- | --------- |
+| **Freighter** | `freighter` | `window.freighterApi` (extension) |
+| **xBull** | `xbull` | `window.xBullSDK` (extension) |
+| **Rabet** | `rabet` | `window.rabet` (extension) |
+
+Enabled by **passing their library** (no reliable global to sniff):
+
+| Wallet | id | How to enable |
+| ------ | -- | ------------- |
+| **Albedo** | `albedo` | `new WebClient({ albedo })` — `import albedo from '@albedo-link/intent'` |
+| **LOBSTR** | `lobstr` | `new WebClient({ lobstr })` — `import * as lobstr from '@lobstrco/signer-extension-api'` |
+
+Bring **any other** wallet (WalletConnect, Ledger, a custom signer) by implementing the small
+`WalletAdapter` interface and registering it — see [Custom wallets](#custom-wallets).
+
+### Inspecting & choosing wallets
+
+Detection is automatic by default, **but the provider can also be defined** — per call, or as the
+client's preferred order:
+
+```ts
+import { Wallets } from '@cosmosapp/pay_sdk/web';
+
+const wallets = await webClient.getAvailableWallets();
+// [{ id: 'freighter', name: 'Freighter', available: true }, { id: 'xbull', … }, …]
+
+// Just connect (e.g. to show the address) without paying:
+const { wallet, address, network } = await webClient.connect();
+
+// Pin a specific provider for one call:
+await webClient.pay(intent, { wallet: Wallets.XBULL });
+
+// …or set the default order for this client:
+const pinned = new WebClient({ preferredWallets: [Wallets.XBULL, Wallets.FREIGHTER] });
+```
+
+### `tx` vs `pay` intents
+
+- **`pay` intent** (no source): the client builds a payment transaction from the **connected account**
+  as source — loading its sequence from Horizon, adding the payment op + memo, fee and timebounds.
+  For an open-amount intent (e.g. a donation) pass the amount: `webClient.pay(intent, { amount: '5' })`.
+- **`tx` intent** (source known, XDR present): the client signs the **returned XDR** as-is. If the
+  connected wallet isn't the intent's `source`, it throws a clear error so you can prompt an account
+  switch.
+
+Want to show the user the transaction before signing? Build without prompting:
+
+```ts
+const { xdr, source, network } = await webClient.buildTransaction(intent);
+// …render a confirmation…
+const result = await webClient.pay(intent); // or sign the xdr yourself
+```
+
+`webClient.pay(intent, { sign: true })` signs **without** submitting (returns `signedXdr`); `{ submit: false }`
+also skips submission.
+
+### Network detection
+
+The network (mainnet/testnet), passphrase and Horizon endpoint are **inferred from the intent**
+(its `network` field / the SEP-7 `network_passphrase`). Override if you self-host Horizon:
+
+```ts
+new WebClient({ network: 'testnet', horizonUrl: 'https://horizon-testnet.stellar.org' });
+```
+
+### Custom wallets
+
+```ts
+import { WebClient, type WalletAdapter } from '@cosmosapp/pay_sdk/web';
+
+const myWallet: WalletAdapter = {
+  id: 'my-wallet',
+  name: 'My Wallet',
+  async isAvailable() { return Boolean(globalThis.myWallet); },
+  async getPublicKey() { return globalThis.myWallet.getAddress(); },
+  async signTransaction(xdr, { networkPassphrase }) {
+    return globalThis.myWallet.sign(xdr, networkPassphrase);
+  },
+};
+
+const webClient = new WebClient();
+webClient.registerWallet(myWallet, /* prepend (win auto-detection) */ true);
+```
+
+### Talking to the API directly (optional — trusted environments only)
+
+The web client can **also call the Cosmos Pay API directly** — creating and validating intents from
+the browser — by passing an `apiKey`. This is handy for prototypes, internal tools and other
+**trusted environments**.
+
+> ⚠️ **Not recommended for public/production frontends.** Doing this ships your API key to the
+> browser, where anyone can read it. Only enable it when the environment is trusted and the key is
+> safe to expose (e.g. a scoped testnet `dv_` key). For production, **create and validate intents on
+> your server** and let the web client only sign/submit.
+
+```ts
+const webClient = new WebClient({ apiKey: 'dv_test_only' }); // trusted env only
+const intent = await webClient.createPay({ destination: 'G...', amount: '10' });
+const result = await webClient.pay(intent);
+const outcome = await webClient.validate(intent.id, result.txHash);
+```
+
+### Inject everything (advanced / SSR / bundle control)
+
+Nothing is imported eagerly. You can inject the Stellar SDK and any wallet library so the bundler
+sees explicit imports:
+
+```ts
+import * as StellarSdk from '@stellar/stellar-sdk';
+import freighter from '@stellar/freighter-api';
+
+const webClient = new WebClient({ stellarSdk: StellarSdk, freighter });
+```
+
 ## 💳 Payment intents
 
 ```ts
@@ -162,8 +343,13 @@ const tx = await client.paymentIntents.createTx({
 });
 console.log(tx.xdr, tx.uri, tx.qr);
 
-// pay intent (no source)
-const pay = await client.paymentIntents.createPay({ destination: 'G...', amount: '10' });
+// pay intent (no source) — typed asset, no issuer to look up
+import { Assets } from '@cosmosapp/pay_sdk';
+const pay = await client.paymentIntents.createPay({
+  destination: 'G...',
+  amount: '10',
+  asset: Assets.USDC, // fills assetCode + the verified issuer for you
+});
 
 // fetch one
 const intent = await client.paymentIntents.fetch('pi_123');
@@ -183,6 +369,58 @@ const outcome = await intent.validate('<txHash>');
 
 Each `PaymentIntent` exposes typed helpers: `isTx`, `isPay`, `isSucceeded`, `isPending`, `assetLabel`,
 and the action methods `fetch()`, `edit()`, `validate()`, `cancel()`, `delete()`.
+
+## 🎨 Typed assets, wallets & addresses
+
+So you never paste the wrong issuer or a magic string, the SDK ships small **typed, extensible
+catalogs** — and a plain string still works everywhere. These are exported from **both** entry points
+(`@cosmosapp/pay_sdk` and `@cosmosapp/pay_sdk/web`).
+
+**Assets** — common assets with their **verified issuers** baked in (no contract/issuer hunting):
+
+```ts
+import { Assets, defineAsset, TestnetAssets } from '@cosmosapp/pay_sdk';
+
+Assets.XLM;   // native lumens
+Assets.USDC;  // { code: 'USDC', issuer: 'GA5Z…' }  (Circle, mainnet — verified)
+Assets.EURC;  // { code: 'EURC', issuer: 'GDHU…' }
+
+// Need another asset? Define it once (issuer/contract are validated):
+const AQUA = defineAsset({ code: 'AQUA', issuer: 'GBNZ…ILCT', name: 'Aquarius' });
+
+await client.paymentIntents.createPay({ destination: 'G...', amount: '5', asset: AQUA });
+
+// Plain code strings still work (treated as code-only):
+await client.paymentIntents.createPay({ destination: 'G...', amount: '5', assetCode: 'USDC', assetIssuer: 'G...' });
+
+// Testnet issuers live in TestnetAssets.* (e.g. TestnetAssets.USDC).
+```
+
+> ⚠️ Issuers are network-specific. `Assets.*` targets **mainnet**; use `TestnetAssets.*` for testnet.
+
+**Wallets** — typed ids instead of magic strings:
+
+```ts
+import { WebClient, Wallets } from '@cosmosapp/pay_sdk/web';
+
+const webClient = new WebClient({ preferredWallets: [Wallets.XBULL, Wallets.FREIGHTER] });
+await webClient.pay(intent, { wallet: Wallets.FREIGHTER }); // pin a provider for one call
+```
+
+**Addresses** — name the accounts you use a lot and reference them by name; values are validated, and
+anything unknown passes through unchanged (so raw `G…`, muxed `M…` and federation addresses keep
+working):
+
+```ts
+import { addresses } from '@cosmosapp/pay_sdk';
+
+addresses.define('merchant', 'GC...PAYOUT');
+await client.paymentIntents.createPay({ destination: 'merchant', amount: '10' });
+
+// validation helpers, too:
+import { isStellarAddress } from '@cosmosapp/pay_sdk';
+isStellarAddress('GC...'); // true
+```
 
 ## 🔔 Webhooks
 
@@ -210,7 +448,7 @@ await endpoint.delete();
 
 ### Receiving events — `client.webhooks.on(...)`
 
-Subscribe to events the discord.js way. You can listen with the raw type, its camelCase alias, or
+Subscribe to events with the atomic event API. You can listen with the raw type, its camelCase alias, or
 `event` for everything:
 
 ```ts

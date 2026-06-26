@@ -1,4 +1,4 @@
-// Receive webhook events the discord.js way — client.webhooks.on(...) plus the
+// Receive webhook events with the atomic event API — client.webhooks.on(...) plus the
 // built-in HTTP handler (signature verification included).
 // Run with: node examples/webhook-server.mjs  (after `npm run build`)
 import { createServer } from 'node:http';

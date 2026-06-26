@@ -1,7 +1,7 @@
 {
   "name": "@cosmosapp/pay_sdk",
-  "version": "1.0.1",
-  "description": "A powerful, object-oriented JavaScript/TypeScript SDK for the Cosmos Pay Payments API (Stellar SEP-7 payment intents, webhooks, products, customers and analytics) — discord.js-style atomic client.",
+  "version": "1.1.0",
+  "description": "A powerful, object-oriented JavaScript/TypeScript SDK for the Cosmos Pay Payments API — server SDK (Stellar SEP-7 payment intents, webhooks, products, customers, analytics) plus a browser web client that auto-detects Freighter, xBull, Rabet, LOBSTR & Albedo wallets and signs transactions for you.",
   "keywords": [
     "cosmos",
     "cosmos-pay",
@@ -13,7 +13,14 @@
     "sdk",
     "api",
     "client",
-    "typescript"
+    "typescript",
+    "wallet",
+    "freighter",
+    "xbull",
+    "albedo",
+    "rabet",
+    "lobstr",
+    "browser"
   ],
   "license": "MIT",
   "author": "Cosmos Pay",
@@ -39,7 +46,18 @@
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
-    }
+    },
+    "./web": {
+      "import": {
+        "types": "./dist/web/index.d.ts",
+        "default": "./dist/web/index.js"
+      },
+      "require": {
+        "types": "./dist/web/index.d.cts",
+        "default": "./dist/web/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",
@@ -55,8 +73,8 @@
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "pretest": "npm run build",
-    "test": "node --test test/client.test.mjs test/rest.test.mjs test/payment-intents.test.mjs test/webhooks.test.mjs test/structures.test.mjs",
-    "test:watch": "node --test --watch test/client.test.mjs test/rest.test.mjs test/payment-intents.test.mjs test/webhooks.test.mjs test/structures.test.mjs",
+    "test": "node --test test/client.test.mjs test/rest.test.mjs test/payment-intents.test.mjs test/webhooks.test.mjs test/structures.test.mjs test/web.test.mjs test/catalogs.test.mjs",
+    "test:watch": "node --test --watch test/client.test.mjs test/rest.test.mjs test/payment-intents.test.mjs test/webhooks.test.mjs test/structures.test.mjs test/web.test.mjs test/catalogs.test.mjs",
     "prepublishOnly": "npm run build",
     "changelog": "node scripts/update-changelog.mjs",
     "clean": "rimraf dist"
@@ -67,6 +85,14 @@
     "semver": "^7.6.3",
     "tsup": "^8.3.5",
     "typescript": "^5.7.2"
+  },
+  "peerDependencies": {
+    "@stellar/stellar-sdk": ">=11"
+  },
+  "peerDependenciesMeta": {
+    "@stellar/stellar-sdk": {
+      "optional": true
+    }
   },
   "sideEffects": false,
   "publishConfig": {

@@ -7,6 +7,8 @@
  * them entirely.
  */
 
+import type { AssetRef } from '@/common/assets';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Enums (provided both as runtime objects and as string-literal unions)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -68,12 +70,17 @@ export type ProductKind = (typeof ProductKind)[keyof typeof ProductKind];
 
 /** Body for `POST /v1/payment-intents/tx`. */
 export interface CreateTxPaymentIntentOptions {
-  /** Payer's Stellar account — the transaction source. */
+  /** Payer's Stellar account — the transaction source. A registered address-book name also works. */
   source: string;
-  /** Payee's Stellar account. */
+  /** Payee's Stellar account. A registered address-book name also works. */
   destination: string;
   /** Amount as a decimal string (max 7 decimals). */
   amount: string;
+  /**
+   * Typed asset (e.g. `Assets.USDC` or `defineAsset(...)`) — fills `assetCode`
+   * and `assetIssuer` for you. Takes a back seat to explicit code/issuer below.
+   */
+  asset?: AssetRef;
   /** Asset code. Omit (or `XLM`/`native`) for native lumens. */
   assetCode?: string;
   /** Issuer account for a non-native asset. */
@@ -88,10 +95,15 @@ export interface CreateTxPaymentIntentOptions {
 
 /** Body for `POST /v1/payment-intents/pay`. */
 export interface CreatePayPaymentIntentOptions {
-  /** Payee's Stellar account. */
+  /** Payee's Stellar account. A registered address-book name also works. */
   destination: string;
   /** Amount the destination should receive. Omit to let the user enter it (e.g. donations). */
   amount?: string;
+  /**
+   * Typed asset (e.g. `Assets.USDC` or `defineAsset(...)`) — fills `assetCode`
+   * and `assetIssuer` for you. Takes a back seat to explicit code/issuer below.
+   */
+  asset?: AssetRef;
   /** Asset code the destination receives. Omit for native lumens (XLM). */
   assetCode?: string;
   /** Issuer account for a non-native asset. */

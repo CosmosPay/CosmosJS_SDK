@@ -1,5 +1,5 @@
 /** Library version, kept in sync with package.json. */
-export const version = '1.0.0';
+export const version = '1.1.0';
 
 /**
  * Default base URL of the Cosmos Pay gateway. Maintained by Cosmos Pay — users
@@ -27,7 +27,7 @@ export const SIGNATURE_HEADER = 'x-cosmos-signature';
 
 /**
  * Client debug/telemetry events. The {@link Client} extends EventEmitter and
- * emits these for observability — mirroring discord.js's `debug`/`rateLimit`.
+ * emits these for observability (`debug`/`rateLimit`-style events).
  */
 export const Events = {
   Debug: 'debug',

@@ -42,7 +42,7 @@ const commits = rawLog
 const date = new Date().toISOString().slice(0, 10);
 
 const server = process.env.GITHUB_SERVER_URL || 'https://github.com';
-const repo = process.env.GITHUB_REPOSITORY || 'Emanuel250YT/cosmosjs_sdk';
+const repo = process.env.GITHUB_REPOSITORY || 'CosmosPay/CosmosJS_SDK';
 const repoUrl = `${server}/${repo}`;
 
 const heading = prevTag

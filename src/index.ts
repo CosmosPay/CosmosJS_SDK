@@ -72,6 +72,33 @@ export {
 } from '@/util/Constants';
 export type { ClientEvent } from '@/util/Constants';
 
+// Typed catalogs — assets (with verified issuers), wallets and address helpers
+export {
+  Assets,
+  TestnetAssets,
+  defineAsset,
+  resolveAsset,
+  isNativeAsset,
+  Wallets,
+  AddressBook,
+  addresses,
+  resolveAddress,
+  isStellarAddress,
+  isMuxedAddress,
+  isContractAddress,
+  isAddress,
+  assertAddress,
+  resolveIntentBody,
+} from '@/common/index';
+export type {
+  AssetDefinition,
+  AssetRef,
+  ResolvedAsset,
+  WalletId,
+  AddressRef,
+  ResolvableIntentInput,
+} from '@/common/index';
+
 // Enums + all API types
 export {
   PaymentIntentStatus,
