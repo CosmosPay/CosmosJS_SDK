@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here. This file is updated automatically on each release.
 
+## [v1.1.0](https://github.com/CosmosPay/CosmosJS_SDK/compare/v1.0.1...v1.1.0) - 2026-06-26
+
+- Maintenance release (no notable changes).
+
 ## [v1.0.1](https://github.com/CosmosPay/CosmosJS_SDK/releases/tag/v1.0.1) - 2026-06-25
 
 - Update package-lock.json and package.json to reflect package name change to "@cosmosapp/pay_sdk" and add "semver" as a dev dependency. Enhance GitHub Actions workflow for automated versioning and publishing, including a new script for version resolution. ([`ec09229`](https://github.com/CosmosPay/CosmosJS_SDK/commit/ec09229))
