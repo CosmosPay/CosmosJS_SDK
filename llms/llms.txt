@@ -1,0 +1,45 @@
+# @cosmosapp/pay_sdk
+
+> Object-oriented JavaScript/TypeScript SDK for the Cosmos Pay Payments API:
+> Stellar SEP-7 payment intents, webhooks, products, customers and analytics.
+> Two entry points — `@cosmosapp/pay_sdk` (server) and `@cosmosapp/pay_sdk/web`
+> (browser wallets: Freighter, xBull, Rabet, LOBSTR, Albedo).
+
+Key facts an integrator must know: the network is chosen by the API key type
+(`dv_` → testnet, `prod_` → mainnet); amounts are decimal strings (≤ 7 decimals);
+the webhook secret (`whsec_…`) is shown only once on create/rotate; a normal
+integration only sets `apiKey` (the gateway URL is pre-configured); requires
+Node ≥ 18. The flow has three steps: server creates an intent →
+browser completes it with the user's wallet (`WebClient.pay`) →
+server validates the resulting txHash (which fires a webhook).
+
+The files below are atomic and self-contained — read the ones relevant to the task.
+
+## Docs
+
+- [Overview](./00-overview.md): what the SDK is, the two entry points, the mental model, key facts
+- [Installation](./01-installation.md): npm install, the optional Stellar SDK peer dep, ESM/CJS imports
+- [Authentication](./02-authentication.md): API key, network-by-key-type, keeping the key server-side
+- [Quickstart](./03-quickstart.md): smallest end-to-end flow + the server/browser split
+- [The Client](./04-client.md): managers table, constructor options, structures
+- [Payment intents](./05-payment-intents.md): createPay/createTx, fetch/list, edit/cancel/delete, validate
+- [Web client](./06-web-client.md): browser wallets, pay() options, custom adapters, DI, direct API
+- [Webhooks](./07-webhooks.md): register endpoints, receive events (http/Express), verify signatures
+- [Products & customers](./08-products-customers.md): catalog CRUD + payment stats
+- [Analytics & health](./09-analytics-health.md): summary, balances, logs, liveness/readiness
+- [Assets, wallets & addresses](./10-assets-wallets-addresses.md): typed catalogs + validators
+- [Errors & observability](./11-errors-observability.md): error classes, retries, telemetry events
+- [Configuration](./12-configuration.md): full option reference + self-hosting
+- [Types & enums](./13-types-reference.md): enums, option types, entity payload shapes
+
+## Recipes
+
+- [Recipes](./14-recipes.md): checkout, donations, idempotent webhooks, reconciliation, testnet/mainnet
+
+## Optional
+
+- [Full docs (single file)](./llms-full.txt): every section above concatenated for one-shot ingestion
+- [Runnable examples](../examples/README.md): one example per feature (`../examples/*.mjs`)
+- [README](../README.md): the human-facing package README
+- [npm package](https://www.npmjs.com/package/@cosmosapp/pay_sdk)
+- [Repository](https://github.com/CosmosPay/CosmosJS_SDK)

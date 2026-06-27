@@ -1,0 +1,43 @@
+# Overview
+
+`@cosmosapp/pay_sdk` is the object-oriented JavaScript/TypeScript SDK for the
+**Cosmos Pay** Payments API — Stellar **SEP-7 payment intents**, **webhooks**,
+**products**, **customers** and **analytics**.
+
+## Two entry points
+
+| Import | Runs in | Purpose |
+| ------ | ------- | ------- |
+| `@cosmosapp/pay_sdk` | server (Node ≥ 18) | Create & manage intents, webhooks, products, customers, analytics — anything that needs your secret API key. |
+| `@cosmosapp/pay_sdk/web` | browser | *Complete* an intent: auto-detect the user's Stellar wallet (Freighter, xBull, Rabet, LOBSTR, Albedo), build the transaction, sign and submit. Provider-agnostic. |
+
+## Mental model
+
+A payment has two halves:
+
+1. **Server** creates an intent with your secret key (`client.paymentIntents.createPay`/`createTx`)
+   and returns the payload (`uri`, `qr`, and for `tx` intents an unsigned `xdr`) to your frontend.
+2. **Browser** completes it with the user's wallet (`new WebClient().pay(intent)`),
+   producing an on-chain `txHash`.
+3. **Server** finalizes by validating that hash (`intent.validate(txHash)`), which
+   updates the status and fires a webhook.
+
+## Design
+
+- **Atomic** — one `Client`; one manager per resource (`client.paymentIntents`,
+  `client.webhooks`, `client.products`, `client.customers`, `client.analytics`,
+  `client.health`).
+- **Self-acting structures** — returned objects act on themselves:
+  `intent.validate()`, `endpoint.rotateSecret()`, `product.deactivate()`.
+- **Zero runtime dependencies** — native `fetch` + `node:crypto`. The Stellar SDK
+  is an *optional* peer dep, only needed by the browser web client.
+- **Fully typed** — works in both CJS and ESM.
+
+## Key facts for correct integration
+
+- The **network is chosen by the API key type**: `dv_` → testnet, `prod_` → mainnet.
+  You never pass a network on the server.
+- **Amounts are decimal strings** (e.g. `'10'`, `'120.1234567'`), max 7 decimals.
+- The **webhook secret (`whsec_…`) is shown only once** on `create`/`rotateSecret`.
+- The **gateway URL is pre-configured**; a normal integration only sets `apiKey`.
+- Default gateway: `https://api.cosmospay.lat/cosmos-api`. Requires Node ≥ 18.

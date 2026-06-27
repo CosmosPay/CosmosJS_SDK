@@ -11,7 +11,7 @@ Stellar **SEP-7 payment intents** · **webhooks** · **products** · **customers
 [![npm downloads](https://img.shields.io/npm/dm/@cosmosapp/pay_sdk?style=flat-square&color=7c3aed)](https://www.npmjs.com/package/@cosmosapp/pay_sdk)
 [![types](https://img.shields.io/npm/types/@cosmosapp/pay_sdk?style=flat-square&color=3178c6)](https://www.npmjs.com/package/@cosmosapp/pay_sdk)
 [![node](https://img.shields.io/node/v/@cosmosapp/pay_sdk?style=flat-square&color=339933)](https://nodejs.org)
-[![license](https://img.shields.io/npm/l/@cosmosapp/pay_sdk?style=flat-square&color=22c55e)](./LICENSE)
+[![license](https://img.shields.io/badge/license-Source--Available-22c55e?style=flat-square)](./LICENSE)
 
 </div>
 
@@ -47,6 +47,16 @@ const webClient = new WebClient();
 const { txHash, account, wallet } = await webClient.pay(intent);
 console.log(`Paid via ${wallet} from ${account}: ${txHash}`);
 ```
+
+> 📚 **Runnable examples** for every feature live in [`examples/`](./examples)
+> (one file per area — payment intents, web client, webhooks, products, customers,
+> analytics, errors, …). See [`examples/README.md`](./examples/README.md).
+>
+> 🤖 **Using an AI assistant?** Atomic, AI-readable docs live in the isolated
+> [`llms/`](./llms) folder ([`llms.txt`](./llms/llms.txt) index + per-topic files +
+> a combined [`llms-full.txt`](./llms/llms-full.txt)) — point your tool at them to
+> make integrating the SDK much easier. After install they're at
+> `node_modules/@cosmosapp/pay_sdk/llms/`.
 
 ## ✨ Features
 
@@ -694,4 +704,17 @@ pushing unrelated commits is always safe. Packages ship with
 
 ## 📄 License
 
-[MIT](./LICENSE)
+**Cosmos Pay Source-Available License** — see [`LICENSE`](./LICENSE).
+
+It's based on the **Apache License 2.0** with two additional restrictions, so in short:
+
+- ✅ **Free to use**, including in **commercial** products and services.
+- ✅ **Modify and distribute** your changes under the same terms.
+- ❌ **No reselling the SDK as-is** — you can't redistribute or host it substantially
+  unmodified as your own product/service (Commons Clause). Building real products *on top of* it is
+  fine.
+- ❌ **No malicious use** — no fraud, theft, malware/phishing, or uses that break the law or
+  violate others' rights.
+
+> Because of those restrictions this is a **source-available** license, not an OSI-approved
+> "open source" one. This is not legal advice.

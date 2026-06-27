@@ -22,7 +22,7 @@
     "lobstr",
     "browser"
   ],
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "author": "Cosmos Pay",
   "repository": {
     "type": "git",
@@ -61,6 +61,7 @@
   },
   "files": [
     "dist",
+    "llms",
     "README.md",
     "CHANGELOG.md",
     "LICENSE"
@@ -77,6 +78,7 @@
     "test:watch": "node --test --watch test/client.test.mjs test/rest.test.mjs test/payment-intents.test.mjs test/webhooks.test.mjs test/structures.test.mjs test/web.test.mjs test/catalogs.test.mjs",
     "prepublishOnly": "npm run build",
     "changelog": "node scripts/update-changelog.mjs",
+    "llms": "node scripts/build-llms.mjs",
     "clean": "rimraf dist"
   },
   "devDependencies": {
