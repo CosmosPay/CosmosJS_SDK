@@ -53,11 +53,12 @@ function bumpFromCommits(sinceRef) {
     const range = sinceRef ? `${sinceRef}..HEAD` : 'HEAD';
     log = execSync(`git log ${range} --format=%B`, { stdio: ['ignore', 'pipe', 'ignore'] }).toString();
   } catch {
-    return 'patch'; // no git history reachable (e.g. shallow checkout) -> safe default
+    return 'patch'; // can't read history -> release a patch rather than silently skip
   }
   if (/(^|\n)[ \t]*BREAKING CHANGE/.test(log) || /(^|\n)[a-z]+(\([^)]+\))?!:/.test(log)) return 'major';
   if (/(^|\n)feat(\([^)]+\))?:/i.test(log)) return 'minor';
-  return 'patch';
+  if (/(^|\n)(fix|perf|refactor|revert)(\([^)]+\))?:/i.test(log)) return 'patch';
+  return 'none'; // only chore/docs/ci/style/test/build (or no new commits) -> nothing to release
 }
 
 // The tag marking the last released commit — the boundary for "commits since release".
@@ -78,6 +79,7 @@ function lastReleaseRef(highestVersion) {
 let target;
 let bumped = false;
 let bump = 'none';
+let release = true; // whether this push warrants publishing a new version at all
 
 if (!highest) {
   // 1. First publish ever.
@@ -88,29 +90,40 @@ if (!highest) {
 } else {
   // 3. Auto-bump from the highest published version, with the type from Conventional Commits.
   bump = bumpFromCommits(lastReleaseRef(highest));
-  target = semver.inc(highest, bump);
-  while (published.includes(target)) target = semver.inc(target, 'patch');
-  bumped = true;
+  if (bump === 'none') {
+    // Nothing release-worthy since the last release -> skip (no publish, no tag, no commit).
+    target = highest;
+    release = false;
+  } else {
+    target = semver.inc(highest, bump);
+    while (published.includes(target)) target = semver.inc(target, 'patch');
+    bumped = true;
+  }
 }
 
-if (target !== local) {
-  pkg.version = target;
-  writeFileSync(pkgUrl, `${JSON.stringify(pkg, null, 2)}\n`);
-}
+// Only touch the version files when we're actually releasing.
+if (release) {
+  if (target !== local) {
+    pkg.version = target;
+    writeFileSync(pkgUrl, `${JSON.stringify(pkg, null, 2)}\n`);
+  }
 
-// Keep the hardcoded library version (src/util/Constants.ts) in lockstep with the
-// resolved version. The build bakes it into the client as `Client.version`, and a
-// unit test asserts `Client.version === package.json version` — so an auto-bump that
-// left Constants behind would fail the release's own test step. Sync it unconditionally
-// (also self-heals any prior drift), even when package.json itself didn't change.
-const constUrl = new URL('../src/util/Constants.ts', import.meta.url);
-const constSrc = readFileSync(constUrl, 'utf8');
-const nextConst = constSrc.replace(/(export const version = )'[^']*'/, `$1'${target}'`);
-if (nextConst === constSrc && !/export const version = '[^']*'/.test(constSrc)) {
-  console.error('release-version: could not find `export const version` in src/util/Constants.ts');
-  process.exit(1);
+  // Keep the hardcoded library version (src/util/Constants.ts) in lockstep with the
+  // resolved version. The build bakes it into the client as `Client.version`, and a
+  // unit test asserts `Client.version === package.json version` — so an auto-bump that
+  // left Constants behind would fail the release's own test step. Sync it unconditionally
+  // (also self-heals any prior drift), even when package.json itself didn't change.
+  const constUrl = new URL('../src/util/Constants.ts', import.meta.url);
+  const constSrc = readFileSync(constUrl, 'utf8');
+  const nextConst = constSrc.replace(/(export const version = )'[^']*'/, `$1'${target}'`);
+  if (nextConst === constSrc && !/export const version = '[^']*'/.test(constSrc)) {
+    console.error('release-version: could not find `export const version` in src/util/Constants.ts');
+    process.exit(1);
+  }
+  if (nextConst !== constSrc) writeFileSync(constUrl, nextConst);
+} else {
+  console.log('No release-worthy commits since the last release — skipping.');
 }
-if (nextConst !== constSrc) writeFileSync(constUrl, nextConst);
 
 const out = (key, value) => {
   console.log(`${key}=${value}`);
@@ -122,4 +135,5 @@ const out = (key, value) => {
 out('version', target);
 out('bumped', bumped ? 'true' : 'false');
 out('bump', bump);
+out('release', release ? 'true' : 'false');
 out('previous', highest ?? '(none)');
