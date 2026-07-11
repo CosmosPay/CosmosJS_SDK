@@ -11,7 +11,7 @@ Stellar **SEP-7 payment intents** · **webhooks** · **products** · **customers
 [![npm downloads](https://img.shields.io/npm/dm/@cosmosapp/pay_sdk?style=flat-square&color=7c3aed)](https://www.npmjs.com/package/@cosmosapp/pay_sdk)
 [![types](https://img.shields.io/npm/types/@cosmosapp/pay_sdk?style=flat-square&color=3178c6)](https://www.npmjs.com/package/@cosmosapp/pay_sdk)
 [![node](https://img.shields.io/node/v/@cosmosapp/pay_sdk?style=flat-square&color=339933)](https://nodejs.org)
-[![license](https://img.shields.io/badge/license-Source--Available-22c55e?style=flat-square)](./LICENSE)
+[![license](https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square)](./LICENSE)
 
 </div>
 
@@ -704,17 +704,12 @@ pushing unrelated commits is always safe. Packages ship with
 
 ## 📄 License
 
-**Cosmos Pay Source-Available License** — see [`LICENSE`](./LICENSE).
-
-It's based on the **Apache License 2.0** with two additional restrictions, so in short:
+**[Apache License 2.0](./LICENSE)** — a permissive, OSI-approved open-source license. In short:
 
 - ✅ **Free to use**, including in **commercial** products and services.
-- ✅ **Modify and distribute** your changes under the same terms.
-- ❌ **No reselling the SDK as-is** — you can't redistribute or host it substantially
-  unmodified as your own product/service (Commons Clause). Building real products *on top of* it is
-  fine.
-- ❌ **No malicious use** — no fraud, theft, malware/phishing, or uses that break the law or
-  violate others' rights.
+- ✅ **Modify, distribute and sublicense** — you may even sell it.
+- ✅ **Explicit patent grant** from contributors, with patent-retaliation protection.
+- ℹ️ When you redistribute, keep the [`LICENSE`](./LICENSE) + [`NOTICE`](./NOTICE) and note any
+  significant changes you made.
 
-> Because of those restrictions this is a **source-available** license, not an OSI-approved
-> "open source" one. This is not legal advice.
+> This is not legal advice.

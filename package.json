@@ -22,7 +22,7 @@
     "lobstr",
     "browser"
   ],
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "Apache-2.0",
   "author": "Cosmos Pay",
   "repository": {
     "type": "git",
@@ -64,7 +64,8 @@
     "llms",
     "README.md",
     "CHANGELOG.md",
-    "LICENSE"
+    "LICENSE",
+    "NOTICE"
   ],
   "engines": {
     "node": ">=18.0.0"
