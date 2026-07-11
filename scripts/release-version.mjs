@@ -63,6 +63,20 @@ if (target !== local) {
   writeFileSync(pkgUrl, `${JSON.stringify(pkg, null, 2)}\n`);
 }
 
+// Keep the hardcoded library version (src/util/Constants.ts) in lockstep with the
+// resolved version. The build bakes it into the client as `Client.version`, and a
+// unit test asserts `Client.version === package.json version` — so an auto-bump that
+// left Constants behind would fail the release's own test step. Sync it unconditionally
+// (also self-heals any prior drift), even when package.json itself didn't change.
+const constUrl = new URL('../src/util/Constants.ts', import.meta.url);
+const constSrc = readFileSync(constUrl, 'utf8');
+const nextConst = constSrc.replace(/(export const version = )'[^']*'/, `$1'${target}'`);
+if (nextConst === constSrc && !/export const version = '[^']*'/.test(constSrc)) {
+  console.error('release-version: could not find `export const version` in src/util/Constants.ts');
+  process.exit(1);
+}
+if (nextConst !== constSrc) writeFileSync(constUrl, nextConst);
+
 const out = (key, value) => {
   console.log(`${key}=${value}`);
   if (process.env.GITHUB_OUTPUT) {
