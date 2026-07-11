@@ -4,6 +4,7 @@ import { CustomerManager } from '@/managers/CustomerManager';
 import { HealthManager } from '@/managers/HealthManager';
 import { PaymentIntentManager } from '@/managers/PaymentIntentManager';
 import { ProductManager } from '@/managers/ProductManager';
+import { SwapManager } from '@/managers/SwapManager';
 import { WebhookManager } from '@/managers/WebhookManager';
 import { REST, type FetchLike } from '@/rest/REST';
 import { version } from '@/util/Constants';
@@ -130,6 +131,8 @@ export class Client extends EventEmitter {
   public readonly webhooks: WebhookManager;
   /** Products / prices. */
   public readonly products: ProductManager;
+  /** Stellar swaps — quote/create/fetch/list/submit. */
+  public readonly swaps: SwapManager;
   /** Customers. */
   public readonly customers: CustomerManager;
   /** Read-only analytics (summary, balances, logs). */
@@ -175,6 +178,7 @@ export class Client extends EventEmitter {
     this.paymentIntents = new PaymentIntentManager(this);
     this.webhooks = new WebhookManager(this);
     this.products = new ProductManager(this);
+    this.swaps = new SwapManager(this);
     this.customers = new CustomerManager(this);
     this.analytics = new AnalyticsManager(this);
     this.health = new HealthManager(this);

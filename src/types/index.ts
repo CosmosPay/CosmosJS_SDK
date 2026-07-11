@@ -64,6 +64,16 @@ export const ProductKind = {
 } as const;
 export type ProductKind = (typeof ProductKind)[keyof typeof ProductKind];
 
+/** Lifecycle state of a swap. */
+export const SwapStatus = {
+  Pending: 'PENDING',
+  Submitted: 'SUBMITTED',
+  Succeeded: 'SUCCEEDED',
+  Failed: 'FAILED',
+  Expired: 'EXPIRED',
+} as const;
+export type SwapStatus = (typeof SwapStatus)[keyof typeof SwapStatus];
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Payment intents
 // ─────────────────────────────────────────────────────────────────────────────
@@ -455,4 +465,111 @@ export interface HealthCheckData {
   info?: Record<string, { status: string } & Record<string, unknown>> | null;
   error?: Record<string, { status: string } & Record<string, unknown>> | null;
   details?: Record<string, { status: string } & Record<string, unknown>>;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Swaps
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Body for `POST /v1/swaps/quote` (pricing only; no fee parameter — the fee is enforced server-side per organization). */
+export interface QuoteSwapOptions {
+  /** Amount to send, as a decimal string (max 7 decimals). */
+  amount: string;
+  /** Source asset code. Omit (or `XLM`/`native`) for native lumens. */
+  sourceAssetCode?: string;
+  /** Issuer account for a non-native source asset. */
+  sourceAssetIssuer?: string;
+  /** Destination asset code the swap should deliver. */
+  destAssetCode: string;
+  /** Issuer account for a non-native destination asset. */
+  destAssetIssuer?: string;
+  /** Allowed slippage in basis points. */
+  slippageBps?: number;
+}
+
+/** Body for `POST /v1/swaps`. */
+export interface CreateSwapOptions extends QuoteSwapOptions {
+  /** Source account performing the swap. A registered address-book name also works. */
+  source: string;
+  /** Destination account that receives the swapped asset. Defaults to the source. */
+  destination?: string;
+  /** MEMO_ID (numeric uint64) for idempotency + on-chain identification. */
+  memo?: string;
+}
+
+/** Body for `POST /v1/swaps/:id/submit`. */
+export interface SubmitSwapOptions {
+  /** Signed transaction envelope (base64 XDR) to relay to the network. */
+  signedXdr: string;
+}
+
+/** Query for `GET /v1/swaps`. */
+export interface ListSwapsOptions {
+  status?: SwapStatus;
+  /** Page size (max 100, default 20). */
+  take?: number;
+  /** Offset (default 0). */
+  skip?: number;
+}
+
+/** Raw swap payload returned by the API. */
+export interface SwapData {
+  id: string;
+  status: SwapStatus;
+  network: string;
+  source: string;
+  destination: string;
+  sendAsset: string;
+  sendAssetIssuer: string | null;
+  sendAmount: string;
+  feeAmount: string;
+  feeBps: number;
+  swapAmount: string;
+  destAsset: string;
+  destAssetIssuer: string | null;
+  destEstimated: string;
+  destMin: string;
+  slippageBps: number;
+  path: { code: string; issuer: string | null }[];
+  memo: string | null;
+  xdr: string;
+  uri: string;
+  txHash: string;
+  qr: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Raw paginated list of swaps. */
+export interface SwapListData {
+  data: SwapData[];
+  total: number;
+  take: number;
+  skip: number;
+}
+
+/** Raw pricing quote returned by `POST /v1/swaps/quote`. */
+export interface SwapQuoteData {
+  network: string;
+  source: { asset: string; issuer: string | null; amount: string };
+  fee: { asset: string; issuer: string | null; amount: string; bps: number; wallet: string | null };
+  swap: { asset: string; issuer: string | null; amount: string };
+  destination: {
+    asset: string;
+    issuer: string | null;
+    estimated: string;
+    minimum: string;
+    slippageBps: number;
+  };
+  path: { code: string; issuer: string | null }[];
+}
+
+/** Raw outcome of relaying a signed swap transaction. */
+export interface SwapSubmitOutcomeData {
+  submitted: boolean;
+  status: SwapStatus;
+  txHash?: string;
+  reason?: string;
+  resultCodes?: string[];
+  swap: SwapData;
 }

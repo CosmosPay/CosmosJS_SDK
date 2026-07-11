@@ -36,6 +36,8 @@ export type {
   WebhookListenerEvents,
 } from '@/managers/WebhookManager';
 export { ProductManager } from '@/managers/ProductManager';
+export { SwapManager } from '@/managers/SwapManager';
+export type { SwapPage, SwapSubmitOutcome } from '@/managers/SwapManager';
 export { CustomerManager } from '@/managers/CustomerManager';
 export { AnalyticsManager } from '@/managers/AnalyticsManager';
 export { HealthManager } from '@/managers/HealthManager';
@@ -46,6 +48,7 @@ export { PaymentIntent } from '@/structures/PaymentIntent';
 export { WebhookEndpoint } from '@/structures/WebhookEndpoint';
 export { WebhookDelivery } from '@/structures/WebhookDelivery';
 export { Product } from '@/structures/Product';
+export { Swap } from '@/structures/Swap';
 export { Customer } from '@/structures/Customer';
 
 // Webhook signature verification
@@ -106,5 +109,6 @@ export {
   WebhookEventType,
   WebhookDeliveryStatus,
   ProductKind,
+  SwapStatus,
 } from '@/types/index';
 export type * from '@/types/index';
