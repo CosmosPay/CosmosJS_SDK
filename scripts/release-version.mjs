@@ -1,15 +1,17 @@
 /**
  * Resolve the next version to publish and write it into package.json.
  *
- * Rules (no conventional-commits discipline required — it "just always updates"):
+ * Fully automatic — you never edit the version by hand:
  *   1. Never published yet            → publish package.json's version as-is.
  *   2. package.json bumped manually    → if it's higher than everything on npm and
- *      to a higher version             not yet published, respect it (minor/major).
- *   3. Otherwise (the common case,     → auto-bump PATCH from the highest version
- *      version unchanged/already on     already on npm (1.0.0 → 1.0.1 → 1.0.2 …),
- *      npm)                             skipping any patch that's somehow taken.
+ *      to a higher version             not yet published, respect it (manual override).
+ *   3. Otherwise (the common case)     → auto-bump from the highest version on npm, with
+ *                                        the bump TYPE derived from the Conventional
+ *                                        Commits since the last release: `feat` → minor,
+ *                                        `!`/`BREAKING CHANGE` → major, anything else →
+ *                                        patch (skipping any version that's already taken).
  *
- * Emits `version` and `bumped` to GITHUB_OUTPUT for the workflow to consume.
+ * Emits `version`, `bumped`, `bump` and `previous` to GITHUB_OUTPUT for the workflow.
  * Run with: node scripts/release-version.mjs
  */
 import { readFileSync, writeFileSync, appendFileSync } from 'node:fs';
@@ -42,18 +44,51 @@ const highest = published.length
   ? published.slice().sort(semver.rcompare)[0]
   : null;
 
+// Determine the semver bump (major/minor/patch) from Conventional Commits made since
+// the last release ref. Mirrors the other CosmosPay repos: `feat` -> minor,
+// `!` or `BREAKING CHANGE` -> major, anything else -> patch.
+function bumpFromCommits(sinceRef) {
+  let log = '';
+  try {
+    const range = sinceRef ? `${sinceRef}..HEAD` : 'HEAD';
+    log = execSync(`git log ${range} --format=%B`, { stdio: ['ignore', 'pipe', 'ignore'] }).toString();
+  } catch {
+    return 'patch'; // no git history reachable (e.g. shallow checkout) -> safe default
+  }
+  if (/(^|\n)[ \t]*BREAKING CHANGE/.test(log) || /(^|\n)[a-z]+(\([^)]+\))?!:/.test(log)) return 'major';
+  if (/(^|\n)feat(\([^)]+\))?:/i.test(log)) return 'minor';
+  return 'patch';
+}
+
+// The tag marking the last released commit — the boundary for "commits since release".
+// Best-effort: needs tags present (the release workflow checks out with fetch-tags).
+function lastReleaseRef(highestVersion) {
+  if (!highestVersion) return null;
+  for (const tag of [`v${highestVersion}`, highestVersion]) {
+    try {
+      execSync(`git rev-parse -q --verify refs/tags/${tag}`, { stdio: 'ignore' });
+      return tag;
+    } catch {
+      /* tag not present — try the next form */
+    }
+  }
+  return null;
+}
+
 let target;
 let bumped = false;
+let bump = 'none';
 
 if (!highest) {
   // 1. First publish ever.
   target = local;
 } else if (!published.includes(local) && semver.gt(local, highest)) {
-  // 2. Manual minor/major bump → respect it.
+  // 2. Manual override: package.json was bumped higher than anything on npm.
   target = local;
 } else {
-  // 3. Auto-bump patch from the highest published version.
-  target = semver.inc(highest, 'patch');
+  // 3. Auto-bump from the highest published version, with the type from Conventional Commits.
+  bump = bumpFromCommits(lastReleaseRef(highest));
+  target = semver.inc(highest, bump);
   while (published.includes(target)) target = semver.inc(target, 'patch');
   bumped = true;
 }
@@ -86,4 +121,5 @@ const out = (key, value) => {
 
 out('version', target);
 out('bumped', bumped ? 'true' : 'false');
+out('bump', bump);
 out('previous', highest ?? '(none)');
