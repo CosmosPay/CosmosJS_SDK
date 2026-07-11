@@ -1,21 +1,17 @@
 name: Release
 
-# Automatic versioned npm publish. On every push to `main` that touches the
-# library (src / build config / package.json), it resolves the next version
-# (auto-bumps PATCH from the latest version on npm, or respects a manual
-# minor/major bump in package.json), then: tests, builds, publishes to npm,
-# commits the version bump back, and creates a git tag + GitHub Release.
+# Fully automatic release. Every push to `main` is evaluated: release-version.mjs reads
+# the Conventional Commits since the last release and resolves the next version
+# (feat -> minor, fix -> patch, `!`/BREAKING -> major). If there's nothing
+# release-worthy (only chore/docs/ci, or no new commits) it emits release=false and the
+# job skips — no publish, no tag, no commit. Otherwise it tests, builds, publishes to
+# npm (provenance), commits the bump + changelog, tags, and creates a GitHub Release.
 #
-# So you never have to touch the version: just push. To force a minor/major,
-# bump package.json yourself and push — that exact version is published.
+# You never touch the version. To force a specific version, bump package.json higher
+# than anything on npm and push — that exact version is published.
 on:
   push:
     branches: [main]
-    paths:
-      - 'src/**'
-      - 'package.json'
-      - 'tsup.config.ts'
-      - 'tsconfig.json'
   workflow_dispatch: # allow a manual run from the Actions tab too
 
 concurrency:
@@ -53,23 +49,32 @@ jobs:
         id: ver
         run: node scripts/release-version.mjs
 
+      - name: No release needed
+        if: steps.ver.outputs.release != 'true'
+        run: echo "No release-worthy commits since v${{ steps.ver.outputs.previous }} — skipping." >> "$GITHUB_STEP_SUMMARY"
+
       - name: Typecheck
+        if: steps.ver.outputs.release == 'true'
         run: npm run typecheck
 
       - name: Test (builds via pretest)
+        if: steps.ver.outputs.release == 'true'
         run: npm test
 
       - name: Build
+        if: steps.ver.outputs.release == 'true'
         run: npm run build
 
       # Zero-tolerance on shipped deps: audit only runtime deps, fail on any advisory.
       - name: Security audit
+        if: steps.ver.outputs.release == 'true'
         run: npm audit --omit=dev --audit-level=low
 
       # Changelog from Conventional Commits (git-cliff via npx) — replaces the old
       # scripts/update-changelog.mjs. CHANGELOG.md is the in-repo record; RELEASE_NOTES.md
       # becomes the GitHub Release body (this release's entries only).
       - name: Generate changelog + release notes
+        if: steps.ver.outputs.release == 'true'
         run: |
           V="v${{ steps.ver.outputs.version }}"
           npx --yes git-cliff@2 --tag "$V" --output CHANGELOG.md
@@ -77,6 +82,7 @@ jobs:
           echo "=== RELEASE_NOTES.md ===" && cat RELEASE_NOTES.md
 
       - name: Commit version bump + changelog
+        if: steps.ver.outputs.release == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -89,16 +95,19 @@ jobs:
           fi
 
       - name: Publish to npm
+        if: steps.ver.outputs.release == 'true'
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create git tag
+        if: steps.ver.outputs.release == 'true'
         run: |
           git tag "v${{ steps.ver.outputs.version }}"
           git push origin "v${{ steps.ver.outputs.version }}"
 
       - name: Create GitHub Release
+        if: steps.ver.outputs.release == 'true'
         uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ steps.ver.outputs.version }}
@@ -106,5 +115,6 @@ jobs:
           body_path: RELEASE_NOTES.md # git-cliff change list; CHANGELOG.md is the in-repo record
 
       - name: Summary
+        if: steps.ver.outputs.release == 'true'
         run: |
           echo "🚀 Published ${{ github.event.repository.name }}@${{ steps.ver.outputs.version }} (previous: ${{ steps.ver.outputs.previous }})" >> "$GITHUB_STEP_SUMMARY"
