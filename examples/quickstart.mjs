@@ -1,18 +1,17 @@
 // Quickstart — the smallest end-to-end flow: create an intent, show the pay URI
 // + QR, then validate a submitted transaction.
 // Run with: node examples/quickstart.mjs   (after `npm run build`)
-import { Client, Assets } from '@cosmosapp/pay_sdk';
+import { Client } from '@cosmosapp/pay_sdk';
 
 // You only bring your API key — the gateway URL and other internals are
 // pre-configured for you. `dv_` keys hit testnet, `prod_` keys hit mainnet.
 const client = new Client({ apiKey: process.env.COSMOS_PAY_API_KEY ?? 'dv_demo' });
 
 // 1. Create a SEP-7 `pay` intent (no source → the payer's wallet picks the source).
-//    `Assets.USDC` fills the verified mainnet issuer for you.
+//    Omitting asset fields uses native XLM on either network.
 const intent = await client.paymentIntents.createPay({
   destination: 'GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO',
   amount: '10',
-  asset: Assets.USDC,
   msg: 'Order #1001',
 });
 

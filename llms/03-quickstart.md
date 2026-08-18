@@ -1,7 +1,7 @@
 # Quickstart
 
 ```ts
-import { Client, Assets } from '@cosmosapp/pay_sdk';
+import { Client } from '@cosmosapp/pay_sdk';
 
 const client = new Client({ apiKey: process.env.COSMOS_PAY_API_KEY });
 
@@ -9,7 +9,7 @@ const client = new Client({ apiKey: process.env.COSMOS_PAY_API_KEY });
 const intent = await client.paymentIntents.createPay({
   destination: 'GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO',
   amount: '120.1234567',
-  asset: Assets.USDC, // fills the verified mainnet issuer for you
+  // Omitting asset fields uses native XLM on both testnet and mainnet.
   msg: 'Order #24',
 });
 
@@ -25,14 +25,14 @@ if (outcome.valid) console.log('Settled!', outcome.status);
 
 ```ts
 // ── server.ts ──────────────────────────────────────────────────────
-import { Client, Assets } from '@cosmosapp/pay_sdk';
+import { Client } from '@cosmosapp/pay_sdk';
 const client = new Client({ apiKey: process.env.COSMOS_PAY_API_KEY });
 
 export async function createIntent() {
   const intent = await client.paymentIntents.createPay({
     destination: 'G...MERCHANT',
     amount: '10',
-    asset: Assets.USDC,
+    // Native XLM keeps this first example network-independent.
   });
   return intent.toJSON(); // send this payload to the browser
 }

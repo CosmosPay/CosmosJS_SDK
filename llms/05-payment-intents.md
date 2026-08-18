@@ -10,13 +10,17 @@
 ## Create
 
 ```ts
-import { Assets } from '@cosmosapp/pay_sdk';
+import { Assets, TestnetAssets } from '@cosmosapp/pay_sdk';
+
+const usdc = process.env.COSMOS_PAY_API_KEY?.startsWith('prod_')
+  ? Assets.USDC
+  : TestnetAssets.USDC;
 
 // pay (no source)
 const pay = await client.paymentIntents.createPay({
   destination: 'G...',          // required — payee (or an address-book name)
   amount: '10',                 // optional — omit for an open amount (donations)
-  asset: Assets.USDC,           // typed asset → fills assetCode + verified issuer
+  asset: usdc,                  // issuer matches the API key network
   // assetCode: 'USDC', assetIssuer: 'G...',  // …or set them explicitly
   // omit asset entirely for native lumens (XLM)
   memo: '123456789',            // optional MEMO_ID (uint64) — auto-generated if omitted

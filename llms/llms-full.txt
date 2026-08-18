@@ -144,7 +144,7 @@ normal integration never sets them.
 # Quickstart
 
 ```ts
-import { Client, Assets } from '@cosmosapp/pay_sdk';
+import { Client } from '@cosmosapp/pay_sdk';
 
 const client = new Client({ apiKey: process.env.COSMOS_PAY_API_KEY });
 
@@ -152,7 +152,7 @@ const client = new Client({ apiKey: process.env.COSMOS_PAY_API_KEY });
 const intent = await client.paymentIntents.createPay({
   destination: 'GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO',
   amount: '120.1234567',
-  asset: Assets.USDC, // fills the verified mainnet issuer for you
+  // Omitting asset fields uses native XLM on both testnet and mainnet.
   msg: 'Order #24',
 });
 
@@ -168,14 +168,14 @@ if (outcome.valid) console.log('Settled!', outcome.status);
 
 ```ts
 // ── server.ts ──────────────────────────────────────────────────────
-import { Client, Assets } from '@cosmosapp/pay_sdk';
+import { Client } from '@cosmosapp/pay_sdk';
 const client = new Client({ apiKey: process.env.COSMOS_PAY_API_KEY });
 
 export async function createIntent() {
   const intent = await client.paymentIntents.createPay({
     destination: 'G...MERCHANT',
     amount: '10',
-    asset: Assets.USDC,
+    // Native XLM keeps this first example network-independent.
   });
   return intent.toJSON(); // send this payload to the browser
 }
@@ -270,13 +270,17 @@ e.g. `intent.isPay`, `intent.assetLabel`, `await intent.validate(txHash)`,
 ## Create
 
 ```ts
-import { Assets } from '@cosmosapp/pay_sdk';
+import { Assets, TestnetAssets } from '@cosmosapp/pay_sdk';
+
+const usdc = process.env.COSMOS_PAY_API_KEY?.startsWith('prod_')
+  ? Assets.USDC
+  : TestnetAssets.USDC;
 
 // pay (no source)
 const pay = await client.paymentIntents.createPay({
   destination: 'G...',          // required — payee (or an address-book name)
   amount: '10',                 // optional — omit for an open amount (donations)
-  asset: Assets.USDC,           // typed asset → fills assetCode + verified issuer
+  asset: usdc,                  // issuer matches the API key network
   // assetCode: 'USDC', assetIssuer: 'G...',  // …or set them explicitly
   // omit asset entirely for native lumens (XLM)
   memo: '123456789',            // optional MEMO_ID (uint64) — auto-generated if omitted
@@ -893,8 +897,14 @@ Pagination wrappers (`list` / `fetchDeliveries`) return
 Copy-paste end-to-end patterns. All server snippets assume:
 
 ```ts
-import { Client, Assets } from '@cosmosapp/pay_sdk';
-const client = new Client({ apiKey: process.env.COSMOS_PAY_API_KEY });
+import { Assets, Client, TestnetAssets } from '@cosmosapp/pay_sdk';
+
+const apiKey = process.env.COSMOS_PAY_API_KEY;
+const merchantAccount = process.env.MERCHANT_ACCOUNT;
+if (!apiKey || !merchantAccount) throw new Error('Missing Cosmos Pay configuration');
+
+const client = new Client({ apiKey });
+const usdc = apiKey.startsWith('prod_') ? Assets.USDC : TestnetAssets.USDC;
 ```
 
 ## 1. Checkout (server creates, browser pays, webhook confirms)
@@ -903,12 +913,12 @@ const client = new Client({ apiKey: process.env.COSMOS_PAY_API_KEY });
 // server: create the intent for an order
 export async function startCheckout(orderId: string, total: string) {
   const intent = await client.paymentIntents.createPay({
-    destination: process.env.MERCHANT_ACCOUNT,
+    destination: merchantAccount,
     amount: total,
-    asset: Assets.USDC,
-    reference: orderId,           // ties the intent to your order
+    asset: usdc,
     msg: `Order ${orderId}`,
   });
+  await intent.edit({ reference: orderId }); // reference is set through PATCH
   return intent.toJSON();         // → send to the browser
 }
 ```
@@ -931,8 +941,8 @@ client.webhooks.on('paymentIntentSucceeded', async (event) => {
 
 ```ts
 const intent = await client.paymentIntents.createPay({
-  destination: process.env.MERCHANT_ACCOUNT,
-  asset: Assets.USDC,   // no amount → the wallet asks the user
+  destination: merchantAccount,
+  asset: usdc,   // no amount → the wallet asks the user
   msg: 'Support us 💜',
 });
 // browser: await new WebClient().pay(intent, { amount: enteredAmount });
@@ -965,7 +975,7 @@ if (!outcome.valid) {
 import { Assets, TestnetAssets } from '@cosmosapp/pay_sdk';
 // dv_ key → testnet → use TestnetAssets.USDC
 // prod_ key → mainnet → use Assets.USDC
-const asset = process.env.COSMOS_PAY_API_KEY.startsWith('prod_') ? Assets.USDC : TestnetAssets.USDC;
+const asset = apiKey.startsWith('prod_') ? Assets.USDC : TestnetAssets.USDC;
 ```
 
 ## 6. Catalog: products + customers
