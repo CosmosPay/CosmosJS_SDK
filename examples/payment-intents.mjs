@@ -1,9 +1,11 @@
 // Payment intents — the full lifecycle: createTx / createPay, fetch, list,
 // edit, cancel, delete, validate, plus the typed structure helpers.
 // Run with: node examples/payment-intents.mjs   (after `npm run build`)
-import { Client, Assets, PaymentIntentStatus } from '@cosmosapp/pay_sdk';
+import { Client, Assets, PaymentIntentStatus, TestnetAssets } from '@cosmosapp/pay_sdk';
 
-const client = new Client({ apiKey: process.env.COSMOS_PAY_API_KEY ?? 'dv_demo' });
+const apiKey = process.env.COSMOS_PAY_API_KEY ?? 'dv_demo';
+const client = new Client({ apiKey });
+const usdc = apiKey.startsWith('prod_') ? Assets.USDC : TestnetAssets.USDC;
 
 // ── tx intent (source known → unsigned XDR + tx URI + QR) ──────────────────────
 const tx = await client.paymentIntents.createTx({
@@ -16,13 +18,13 @@ console.log('tx intent:', tx.id, '\n  xdr?', Boolean(tx.xdr), '\n  uri:', tx.uri
 
 // ── pay intent (no source) ─────────────────────────────────────────────────────
 // Three equivalent ways to set the asset:
-//   a) typed catalog (fills the verified issuer):        asset: Assets.USDC
+//   a) typed catalog matching the API key network:       asset: usdc
 //   b) explicit code + issuer:                           assetCode + assetIssuer
 //   c) omit the asset entirely for native lumens (XLM)
 const pay = await client.paymentIntents.createPay({
   destination: 'GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO',
   amount: '120.1234567',
-  asset: Assets.USDC,
+  asset: usdc,
   msg: 'Order #24',
 });
 console.log('pay intent:', pay.id, '→', pay.assetLabel);

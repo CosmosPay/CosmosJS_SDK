@@ -158,8 +158,7 @@ const client = new Client({ apiKey: process.env.COSMOS_PAY_API_KEY });
 const pay = await client.paymentIntents.createPay({
   destination: 'GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO',
   amount: '120.1234567',
-  assetCode: 'USDC',
-  assetIssuer: 'GCRCUE2C5TBNIPYHMEP7NK5RWTT2WBSZ75CMARH7GDOHDDCQH3XANFOB',
+  // Omitting asset fields uses native XLM on both testnet and mainnet.
   msg: 'Order #24',
 });
 
@@ -353,12 +352,15 @@ const tx = await client.paymentIntents.createTx({
 });
 console.log(tx.xdr, tx.uri, tx.qr);
 
-// pay intent (no source) — typed asset, no issuer to look up
-import { Assets } from '@cosmosapp/pay_sdk';
+// pay intent (no source) — pick the issuer catalog that matches the API key
+import { Assets, TestnetAssets } from '@cosmosapp/pay_sdk';
+const usdc = process.env.COSMOS_PAY_API_KEY?.startsWith('prod_')
+  ? Assets.USDC
+  : TestnetAssets.USDC;
 const pay = await client.paymentIntents.createPay({
   destination: 'G...',
   amount: '10',
-  asset: Assets.USDC, // fills assetCode + the verified issuer for you
+  asset: usdc,
 });
 
 // fetch one
