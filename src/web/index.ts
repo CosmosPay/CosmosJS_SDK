@@ -29,9 +29,19 @@ export {
   RabetAdapter,
   LobstrAdapter,
   AlbedoAdapter,
+  CosmosWalletAdapter,
   defaultAdapters,
 } from '@/web/adapters/index';
 export type { InjectedWallets } from '@/web/adapters/index';
+
+// Cosmos Wallet transport (extension global, or the hosted build's provider script)
+export {
+  injectedProvider,
+  loadHostedProvider,
+  resolveProvider,
+  resetProviderCache,
+} from '@/web/cosmosProvider';
+export type { CosmosProviderOptions, CosmosWalletProvider } from '@/web/cosmosProvider';
 
 // SEP-7 + intent normalization
 export { isSep7Uri, parseSep7, normalizeIntent } from '@/web/sep7';

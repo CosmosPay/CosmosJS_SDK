@@ -6,6 +6,8 @@
 
 /** Built-in wallet ids (matches each adapter's `id`). */
 export const Wallets = {
+  /** Cosmos Pay's own wallet — extension, or the hosted build (see CosmosWalletAdapter). */
+  COSMOS: 'cosmos',
   FREIGHTER: 'freighter',
   XBULL: 'xbull',
   RABET: 'rabet',

@@ -1,8 +1,10 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  // Two entries: the server SDK (default) and the browser/web client.
-  entry: ['src/index.ts', 'src/web/index.ts'],
+  // Three entries: the server SDK (default), the browser/web client, and the
+  // Stellar Wallets Kit module — separate so a dapp that only wants the kit module
+  // does not pull the payments client in with it.
+  entry: ['src/index.ts', 'src/web/index.ts', 'src/swk/index.ts'],
   format: ['esm', 'cjs'],
   dts: true,
   sourcemap: true,

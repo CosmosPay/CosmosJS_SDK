@@ -57,6 +57,16 @@
         "default": "./dist/web/index.cjs"
       }
     },
+    "./swk": {
+      "import": {
+        "types": "./dist/swk/index.d.ts",
+        "default": "./dist/swk/index.js"
+      },
+      "require": {
+        "types": "./dist/swk/index.d.cts",
+        "default": "./dist/swk/index.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -75,8 +85,8 @@
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "pretest": "npm run build",
-    "test": "node --test test/client.test.mjs test/rest.test.mjs test/payment-intents.test.mjs test/swaps.test.mjs test/webhooks.test.mjs test/structures.test.mjs test/web.test.mjs test/catalogs.test.mjs",
-    "test:watch": "node --test --watch test/client.test.mjs test/rest.test.mjs test/payment-intents.test.mjs test/swaps.test.mjs test/webhooks.test.mjs test/structures.test.mjs test/web.test.mjs test/catalogs.test.mjs",
+    "test": "node --test test/client.test.mjs test/rest.test.mjs test/payment-intents.test.mjs test/swaps.test.mjs test/webhooks.test.mjs test/structures.test.mjs test/web.test.mjs test/catalogs.test.mjs test/cosmos-wallet.test.mjs test/liquidity.test.mjs test/ramps.test.mjs test/kyc-pollar.test.mjs",
+    "test:watch": "node --test --watch test/client.test.mjs test/rest.test.mjs test/payment-intents.test.mjs test/swaps.test.mjs test/webhooks.test.mjs test/structures.test.mjs test/web.test.mjs test/catalogs.test.mjs test/cosmos-wallet.test.mjs test/liquidity.test.mjs test/ramps.test.mjs test/kyc-pollar.test.mjs",
     "prepublishOnly": "npm run build",
     "changelog": "npx --yes git-cliff@2 -o CHANGELOG.md",
     "llms": "node scripts/build-llms.mjs",
