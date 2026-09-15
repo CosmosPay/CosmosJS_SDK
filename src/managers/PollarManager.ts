@@ -32,7 +32,9 @@ import type {
  *   3. `token({ code, code_verifier })` → the session, its wallets and the profile.
  *
  * Use PKCE. The code travels through a redirect a client does not control, and the
- * `code_verifier` is the only reason an intercepted one is worth nothing.
+ * `code_verifier` is the only reason an intercepted one is worth nothing. With a
+ * `redirect_uri` it is not a choice: the service refuses that authorize without a
+ * `code_challenge` (`400 validation_failed`).
  *
  * The two callback routes (`/oauth/callback…`) are deliberately absent from this
  * manager: they are where a BROWSER lands, not something a server calls. Polling

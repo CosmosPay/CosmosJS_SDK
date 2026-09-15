@@ -240,6 +240,28 @@ test('the login is authorize → poll → token, and the SDK expresses all three
   assert.equal(session.profile.email, 'a@b.com');
 });
 
+test('the redirect flow sends its PKCE challenge alongside the redirect_uri', async () => {
+  // The service refuses a redirect-flow authorize without `code_challenge`: the
+  // public callback hands the code to whoever presents `state`, and `state` is in
+  // the authorization URL.
+  const { client, fetch } = makeClient(() => ({
+    state: 'st_1',
+    authorization_url: 'https://pollar/auth?x=1',
+    provider: 'google',
+    redirect_uri: 'https://app.example/done',
+    expires_at: '2026-01-01T00:05:00.000Z',
+  }));
+  const started = await client.pollar.authorize({
+    provider: 'google',
+    redirect_uri: 'https://app.example/done',
+    code_challenge: 'chal',
+    code_challenge_method: 'S256',
+  });
+  assert.equal(fetch.calls[0].body.redirect_uri, 'https://app.example/done');
+  assert.equal(fetch.calls[0].body.code_challenge, 'chal');
+  assert.equal(started.redirect_uri, 'https://app.example/done');
+});
+
 test('a login still pending carries no code', async () => {
   const { client } = makeClient(() => ({ status: 'pending', state: 'st_1' }));
   const polled = await client.pollar.session('st_1');

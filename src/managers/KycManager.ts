@@ -108,7 +108,11 @@ export class KycManager extends BaseManager<Receiver> {
     return this.rest.get<ReceiverData>(`${this.route}/receivers/${id}`);
   }
 
-  /** Update a receiver — the same fields as creation, all optional. */
+  /**
+   * Update a receiver — the same fields as creation, all optional. Once the receiver
+   * exists at the provider, identity fields need an elevated key; see
+   * {@link UpdateReceiverOptions}.
+   */
   public async updateReceiver(id: string, options: UpdateReceiverOptions): Promise<Receiver> {
     const data = await this.rest.patch<ReceiverData>(`${this.route}/receivers/${id}`, {
       body: options,

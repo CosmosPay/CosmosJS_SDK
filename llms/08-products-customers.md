@@ -47,6 +47,6 @@ for (const c of customers) {
 }
 ```
 
-`Customer` accessors: `id`, `consumerId`, `name`, `alias`, `note`, `email`,
+`Customer` accessors: `id`, `name`, `alias`, `note`, `email`,
 `account`, `reference`, `createdAt`, `updatedAt`, plus list-only stats
 `payments`, `succeeded`, `total` (null outside `list()`).

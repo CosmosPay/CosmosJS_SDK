@@ -352,10 +352,15 @@ export interface CreateCustomerOptions {
 /** Body for `PATCH /v1/customers/:id`. */
 export type UpdateCustomerOptions = Partial<CreateCustomerOptions>;
 
-/** Raw customer payload. */
+/**
+ * Raw customer payload.
+ *
+ * There is no `consumerId`: the API stopped sending it, because the owning
+ * consumer is the key that made the call and an internal id is not part of the
+ * contract.
+ */
 export interface CustomerData {
   id: string;
-  consumerId: string;
   name: string;
   alias: string | null;
   note: string | null;
@@ -1238,7 +1243,16 @@ export interface CreateReceiverOptions {
   tos_id?: string;
 }
 
-/** Body for `PATCH /v1/kyc/receivers/:id` — the same fields, all optional. */
+/**
+ * Body for `PATCH /v1/kyc/receivers/:id` — the same fields, all optional.
+ *
+ * Identity is reviewed before it reaches the provider, edits included. Until the
+ * receiver is enabled, an edit that touches KYC data sends it back to
+ * `pending_review`. Once it exists at the provider, a tenant key may change only
+ * `external_id` and `image_url`; any other field is `403 kyc_review_required` unless
+ * the key is elevated (`X-Consumer-Role: admin`), because that edit rewrites the
+ * identity at the provider directly.
+ */
 export type UpdateReceiverOptions = Partial<CreateReceiverOptions>;
 
 /** Body for `POST /v1/kyc/receivers/:id/approve`. */
@@ -1470,24 +1484,42 @@ export interface PollarDpopJwk {
   y: string;
 }
 
-/**
- * Body for `POST /v1/pollar/oauth/authorize`.
- *
- * PKCE is not optional in practice: the code that comes back is redeemed with the
- * `code_verifier` this challenge was derived from, so a code intercepted in the
- * redirect is worth nothing without the client that started the flow.
- */
-export interface PollarAuthorizeOptions {
+/** The fields both login flows accept. */
+export interface PollarAuthorizeBaseOptions {
   provider: PollarProvider;
-  redirect_uri?: string;
-  /** Base64url SHA-256 of the verifier held by the client. */
-  code_challenge?: string;
   code_challenge_method?: 'S256';
   /** Binds the resulting session to a key this client holds. */
   dpop_jwk?: PollarDpopJwk;
   /** Shown to the user in their session list. */
   device_label?: string;
 }
+
+/**
+ * Body for `POST /v1/pollar/oauth/authorize`.
+ *
+ * The code that comes back is redeemed with the `code_verifier` the challenge was
+ * derived from, so an intercepted code is worth nothing without the client that
+ * started the flow. How much that matters depends on the flow, and the type follows:
+ *
+ *  - **Redirect** (`redirect_uri` set): `code_challenge` is required. The code crosses
+ *    a browser, and the public callback hands it to whoever presents `state` — which
+ *    is inside `authorization_url` — so the service answers `400 validation_failed`
+ *    to a redirect-flow authorize without one.
+ *  - **Poll** (no `redirect_uri`): the code only travels over your authenticated
+ *    channel, so PKCE is optional. Send it anyway.
+ */
+export type PollarAuthorizeOptions =
+  | (PollarAuthorizeBaseOptions & {
+      /** Where the browser lands with the code. Must be allow-listed for the consumer. */
+      redirect_uri: string;
+      /** Base64url SHA-256 of the verifier held by the client. */
+      code_challenge: string;
+    })
+  | (PollarAuthorizeBaseOptions & {
+      redirect_uri?: undefined;
+      /** Base64url SHA-256 of the verifier held by the client. */
+      code_challenge?: string;
+    });
 
 /** Raw authorize response — where to send the user, and what to poll. */
 export interface PollarAuthorizeData {
@@ -1514,7 +1546,7 @@ export interface PollarLoginSessionData {
 export interface PollarTokenOptions {
   /** The bridge code collected from the polled session. */
   code: string;
-  /** The PKCE verifier the challenge was derived from. */
+  /** The PKCE verifier the challenge was derived from. Required when `authorize` sent a `code_challenge`. */
   code_verifier?: string;
 }
 
