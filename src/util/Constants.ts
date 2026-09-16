@@ -1,5 +1,5 @@
 /** Library version, kept in sync with package.json. */
-export const version = '1.1.0';
+export const version = '2.0.0';
 
 /**
  * Default base URL of the Cosmos Pay gateway. Maintained by Cosmos Pay — users

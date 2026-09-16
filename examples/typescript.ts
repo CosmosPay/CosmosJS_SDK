@@ -3,6 +3,7 @@
 import {
   Client,
   Assets,
+  TestnetAssets,
   PaymentIntentStatus,
   WebhookEventType,
   ProductKind,
@@ -11,14 +12,16 @@ import {
   type ClientOptions,
 } from '@cosmosapp/pay_sdk';
 
-const options: ClientOptions = { apiKey: process.env.COSMOS_PAY_API_KEY ?? 'dv_demo' };
+const apiKey = process.env.COSMOS_PAY_API_KEY ?? 'dv_demo';
+const options: ClientOptions = { apiKey };
 const client = new Client(options);
+const usdc = apiKey.startsWith('prod_') ? Assets.USDC : TestnetAssets.USDC;
 
 // Option objects are type-checked at the call site.
 const payOptions: CreatePayPaymentIntentOptions = {
   destination: 'GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO',
   amount: '10',
-  asset: Assets.USDC,
+  asset: usdc,
 };
 
 async function main(): Promise<void> {
