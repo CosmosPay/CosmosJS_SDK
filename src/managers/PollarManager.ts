@@ -36,6 +36,13 @@ import type {
  * `redirect_uri` it is not a choice: the service refuses that authorize without a
  * `code_challenge` (`400 validation_failed`).
  *
+ * The session only comes back to the account that owns the API key. Every tenant
+ * shares one Pollar application, so `token()` compares the email the login reports
+ * with the key's account email and refuses a login someone else completed with
+ * `403 pollar_identity_mismatch` — the session is revoked, never returned. A key
+ * whose account has no verified email gets `403 pollar_identity_required` at
+ * `authorize()`.
+ *
  * The two callback routes (`/oauth/callback…`) are deliberately absent from this
  * manager: they are where a BROWSER lands, not something a server calls. Polling
  * `session()` is the programmatic half of the same step.
@@ -150,14 +157,19 @@ export class PollarManager {
 
   /* -------------------------------- users -------------------------------- */
 
-  /** Register a user with Pollar ahead of their first login. */
+  /**
+   * Register a user with Pollar ahead of their first login. Needs an elevated
+   * (admin) key: the Pollar user directory is shared by every tenant, so a tenant
+   * key gets `403 elevated_key_required`.
+   */
   public registerUser(options: RegisterPollarUserOptions): Promise<PollarUserData> {
     return this.rest.post<PollarUserData>(`${this.route}/users`, { body: options });
   }
 
   /**
    * Register a user AND provision their Stellar wallet in one call — the variant
-   * to use when the user should be able to receive before they ever log in.
+   * to use when the user should be able to receive before they ever log in. Needs
+   * an elevated (admin) key, like {@link registerUser}.
    */
   public registerUserWithWallet(options: RegisterPollarUserOptions): Promise<PollarUserData> {
     return this.rest.post<PollarUserData>(`${this.route}/users/with-wallet`, { body: options });
