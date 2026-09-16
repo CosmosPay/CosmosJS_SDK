@@ -4,7 +4,6 @@ import { Base } from '@/structures/Base';
 
 /** A customer record, optionally enriched with on-chain payment stats. */
 export class Customer extends Base<CustomerData> {
-  public consumerId!: string;
   public name!: string;
   public alias!: string | null;
   public note!: string | null;
@@ -27,7 +26,6 @@ export class Customer extends Base<CustomerData> {
 
   protected override _patch(data: CustomerData): this {
     super._patch(data);
-    this.consumerId = data.consumerId;
     this.name = data.name;
     this.alias = data.alias;
     this.note = data.note;
@@ -61,7 +59,6 @@ export class Customer extends Base<CustomerData> {
   public toJSON(): CustomerData {
     return {
       id: this.id,
-      consumerId: this.consumerId,
       name: this.name,
       alias: this.alias,
       note: this.note,

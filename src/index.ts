@@ -38,6 +38,21 @@ export type {
 export { ProductManager } from '@/managers/ProductManager';
 export { SwapManager } from '@/managers/SwapManager';
 export type { SwapPage, SwapSubmitOutcome } from '@/managers/SwapManager';
+export { LiquidityManager } from '@/managers/LiquidityManager';
+export { OnrampManager } from '@/managers/OnrampManager';
+export type { PayinPage } from '@/managers/OnrampManager';
+export { OfframpManager } from '@/managers/OfframpManager';
+export type { PayoutPage } from '@/managers/OfframpManager';
+export { ActivityManager } from '@/managers/ActivityManager';
+export { KycManager } from '@/managers/KycManager';
+export { PollarManager } from '@/managers/PollarManager';
+export type { ReceiverPage, ReceiverWalletPage, BankAccountPage } from '@/managers/KycManager';
+export type { ActivityPage } from '@/managers/ActivityManager';
+export type {
+  LiquidityOperationPage,
+  LiquidityPoolPage,
+  LiquiditySubmitOutcome,
+} from '@/managers/LiquidityManager';
 export { CustomerManager } from '@/managers/CustomerManager';
 export { AnalyticsManager } from '@/managers/AnalyticsManager';
 export { HealthManager } from '@/managers/HealthManager';
@@ -49,6 +64,8 @@ export { WebhookEndpoint } from '@/structures/WebhookEndpoint';
 export { WebhookDelivery } from '@/structures/WebhookDelivery';
 export { Product } from '@/structures/Product';
 export { Swap } from '@/structures/Swap';
+export { LiquidityOperation } from '@/structures/LiquidityOperation';
+export { Receiver } from '@/structures/Receiver';
 export { Customer } from '@/structures/Customer';
 
 // Webhook signature verification

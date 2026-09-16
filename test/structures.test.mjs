@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   Client,
+  Customer,
   PaymentIntent,
   CosmosPayAPIError,
   CosmosPayRequestError,
@@ -40,6 +41,25 @@ test('toJSON round-trips back to the raw payload', () => {
   const raw = fakeIntent();
   const intent = new PaymentIntent(client, raw);
   assert.deepEqual(intent.toJSON(), raw);
+});
+
+test('a customer has no consumerId, because the API no longer sends one', () => {
+  // The owning consumer is the key that made the call. Keeping the accessor would
+  // leave an `undefined` field on every customer and in every toJSON().
+  const raw = {
+    id: 'cus_1',
+    name: 'Ada',
+    alias: null,
+    note: null,
+    email: 'a@b.com',
+    account: null,
+    reference: null,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  };
+  const customer = new Customer(client, raw);
+  assert.equal('consumerId' in customer, false);
+  assert.deepEqual(customer.toJSON(), raw);
 });
 
 test('valueOf returns the id (used in primitive coercion)', () => {

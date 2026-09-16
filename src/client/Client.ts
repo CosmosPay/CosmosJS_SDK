@@ -2,6 +2,12 @@ import { EventEmitter } from 'node:events';
 import { AnalyticsManager } from '@/managers/AnalyticsManager';
 import { CustomerManager } from '@/managers/CustomerManager';
 import { HealthManager } from '@/managers/HealthManager';
+import { LiquidityManager } from '@/managers/LiquidityManager';
+import { OnrampManager } from '@/managers/OnrampManager';
+import { OfframpManager } from '@/managers/OfframpManager';
+import { ActivityManager } from '@/managers/ActivityManager';
+import { KycManager } from '@/managers/KycManager';
+import { PollarManager } from '@/managers/PollarManager';
 import { PaymentIntentManager } from '@/managers/PaymentIntentManager';
 import { ProductManager } from '@/managers/ProductManager';
 import { SwapManager } from '@/managers/SwapManager';
@@ -133,6 +139,18 @@ export class Client extends EventEmitter {
   public readonly products: ProductManager;
   /** Stellar swaps — quote/create/fetch/list/submit. */
   public readonly swaps: SwapManager;
+  /** Liquidity pools: browse, positions, deposit / withdraw. */
+  public readonly liquidity: LiquidityManager;
+  /** Fiat -> stablecoin: quotes, payins, trustlines, virtual accounts. */
+  public readonly onramp: OnrampManager;
+  /** Stablecoin -> fiat: quotes, authorize, payouts, compliance documents. */
+  public readonly offramp: OfframpManager;
+  /** The client event stream: report events, read them back, summarize. */
+  public readonly activity: ActivityManager;
+  /** KYC / KYB: receivers, their wallets and their bank accounts. */
+  public readonly kyc: KycManager;
+  /** Pollar: social login, its sessions, and the custodial wallets behind them. */
+  public readonly pollar: PollarManager;
   /** Customers. */
   public readonly customers: CustomerManager;
   /** Read-only analytics (summary, balances, logs). */
@@ -179,6 +197,12 @@ export class Client extends EventEmitter {
     this.webhooks = new WebhookManager(this);
     this.products = new ProductManager(this);
     this.swaps = new SwapManager(this);
+    this.liquidity = new LiquidityManager(this);
+    this.onramp = new OnrampManager(this);
+    this.offramp = new OfframpManager(this);
+    this.activity = new ActivityManager(this);
+    this.kyc = new KycManager(this);
+    this.pollar = new PollarManager(this);
     this.customers = new CustomerManager(this);
     this.analytics = new AnalyticsManager(this);
     this.health = new HealthManager(this);
