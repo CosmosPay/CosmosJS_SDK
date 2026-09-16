@@ -30,6 +30,8 @@ function fakeReceiver(overrides = {}) {
     country: 'BR',
     externalId: null,
     disabled: false,
+    dossierVersion: 3,
+    reviewedVersion: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
     ...overrides,
@@ -95,6 +97,46 @@ test('the access kill switch is a PATCH and lands on the instance', async () => 
   assert.match(fetch.calls[1].url, /\/kyc\/receivers\/re_1\/access$/);
   assert.equal(fetch.calls[1].body.disabled, true);
   assert.equal(receiver.disabled, true);
+});
+
+test('approving pins the version of the dossier that was read', async () => {
+  // A review is a person reading the KYC data and then approving it. The tenant can
+  // edit in between and the status stays `pending_review`, so the version is the only
+  // thing that tells the API which dossier was actually reviewed.
+  const { client, fetch } = makeClient(() => fakeReceiver({ kycStatus: 'pending_user' }));
+  const receiver = await client.kyc.fetchReceiver('re_1');
+
+  await receiver.approve({ redirect_url: 'https://app.acme.com/kyc/return' });
+
+  assert.match(fetch.calls[1].url, /\/kyc\/receivers\/re_1\/approve$/);
+  assert.equal(fetch.calls[1].body.expected_version, 3);
+});
+
+test('an explicit expected_version wins, including undefined to opt out', async () => {
+  const { client, fetch } = makeClient(() => fakeReceiver());
+  const receiver = await client.kyc.fetchReceiver('re_1');
+
+  await receiver.approve({ redirect_url: 'https://app.acme.com/r', expected_version: 1 });
+  assert.equal(fetch.calls[1].body.expected_version, 1);
+
+  await receiver.approve({ redirect_url: 'https://app.acme.com/r', expected_version: undefined });
+  assert.equal('expected_version' in fetch.calls[2].body, false);
+});
+
+test('the manager approves exactly what it is handed, with no id to infer from', async () => {
+  const { client, fetch } = makeClient(() => fakeReceiver());
+
+  await client.kyc.approveReceiver('re_9', { redirect_url: 'https://app.acme.com/r' });
+
+  assert.equal('expected_version' in fetch.calls[0].body, false);
+});
+
+test('the reviewed version is carried onto the instance', async () => {
+  const { client } = makeClient(() => fakeReceiver({ reviewedVersion: 3 }));
+  const receiver = await client.kyc.fetchReceiver('re_1');
+
+  assert.equal(receiver.dossierVersion, 3);
+  assert.equal(receiver.reviewedVersion, 3);
 });
 
 test('deleting a receiver drops it from the cache too', async () => {

@@ -37,6 +37,10 @@ export class Receiver extends Base<ReceiverData> {
   public externalId!: string | null;
   /** True when the receiver is cut off from both ramps. */
   public disabled!: boolean;
+  /** How many times the submitted KYC data has been written. */
+  public dossierVersion!: number;
+  /** The version a reviewer approved, or null while unapproved. */
+  public reviewedVersion!: number | null;
   public createdAt!: Date;
   public updatedAt!: Date;
 
@@ -55,6 +59,8 @@ export class Receiver extends Base<ReceiverData> {
     this.country = data.country ?? null;
     this.externalId = data.externalId ?? null;
     this.disabled = data.disabled;
+    this.dossierVersion = data.dossierVersion;
+    this.reviewedVersion = data.reviewedVersion ?? null;
     this.createdAt = new Date(data.createdAt);
     this.updatedAt = new Date(data.updatedAt);
     return this;
@@ -81,9 +87,22 @@ export class Receiver extends Base<ReceiverData> {
     return this.client.kyc.deleteReceiver(this.id);
   }
 
-  /** Approve it out of review (admin-only). */
+  /**
+   * Approve it out of review (admin-only).
+   *
+   * Pinned to the dossier THIS instance holds: `expected_version` defaults to
+   * {@link Receiver.dossierVersion}, so approving a receiver that was edited since
+   * you read it is a `409 kyc_state_invalid` rather than a silent approval of data
+   * you never saw. Call {@link Receiver.fetch} and review again, or pass
+   * `expected_version` yourself — including `undefined`, which approves whatever
+   * is stored now.
+   */
   public approve(options: ApproveReceiverOptions = {}): Promise<ReceiverData> {
-    return this.client.kyc.approveReceiver(this.id, options);
+    const pinned: ApproveReceiverOptions =
+      'expected_version' in options
+        ? options
+        : { ...options, expected_version: this.dossierVersion };
+    return this.client.kyc.approveReceiver(this.id, pinned);
   }
 
   /** Ask for a terms-of-service link for this receiver. */
@@ -135,6 +154,8 @@ export class Receiver extends Base<ReceiverData> {
       country: this.country,
       externalId: this.externalId,
       disabled: this.disabled,
+      dossierVersion: this.dossierVersion,
+      reviewedVersion: this.reviewedVersion,
       createdAt: this.createdAt.toISOString(),
       updatedAt: this.updatedAt.toISOString(),
     };

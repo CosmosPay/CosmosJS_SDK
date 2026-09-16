@@ -1258,6 +1258,20 @@ export type UpdateReceiverOptions = Partial<CreateReceiverOptions>;
 /** Body for `POST /v1/kyc/receivers/:id/approve`. */
 export interface ApproveReceiverOptions {
   redirect_url?: string;
+  /**
+   * The {@link ReceiverData.dossierVersion} this approval is for.
+   *
+   * Approving is a statement about KYC data someone read and accepted, and the
+   * tenant can edit that data in between: an edit leaves the receiver in
+   * `pending_review`, so without a version the approval lands on whatever is
+   * stored when the request arrives and nobody can tell. Send it and a dossier
+   * that moved on is a `409 kyc_state_invalid` — re-read, review again, approve
+   * that version.
+   *
+   * {@link Receiver.approve} fills this in from the instance; omit it there only
+   * if you mean "approve whatever is stored now".
+   */
+  expected_version?: number;
 }
 
 /** Body for `POST /v1/kyc/receivers/:id/tos`. */
@@ -1298,6 +1312,18 @@ export interface ReceiverData {
   externalId: string | null;
   /** True when the receiver is cut off from the ramps. */
   disabled: boolean;
+  /**
+   * How many times the submitted KYC data has been written. Send it back as
+   * `expected_version` when approving, so the approval cannot land on a dossier
+   * nobody read.
+   */
+  dossierVersion: number;
+  /**
+   * The `dossierVersion` a reviewer approved, or null while unapproved. The
+   * receiver cannot be enabled until it equals {@link ReceiverData.dossierVersion}
+   * again, so an edit after approval sends it back through review.
+   */
+  reviewedVersion: number | null;
   createdAt: string;
   updatedAt: string;
 }
