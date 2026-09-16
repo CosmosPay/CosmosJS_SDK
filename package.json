@@ -1,6 +1,6 @@
 {
   "name": "@cosmosapp/pay_sdk",
-  "version": "1.2.1",
+  "version": "2.0.0",
   "description": "A powerful, object-oriented JavaScript/TypeScript SDK for the Cosmos Pay Payments API — server SDK (Stellar SEP-7 payment intents, webhooks, products, customers, analytics) plus a browser web client that auto-detects Freighter, xBull, Rabet, LOBSTR & Albedo wallets and signs transactions for you.",
   "keywords": [
     "cosmos",
