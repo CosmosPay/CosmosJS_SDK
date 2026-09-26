@@ -1687,3 +1687,183 @@ export interface PollarTokenVerificationData {
   auth_provider?: string;
   wallet?: PollarWalletData;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Payment intent history
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** One status change of a payment intent — `GET /v1/payment-intents/{id}/transitions`. */
+export interface PaymentIntentTransitionData {
+  id: string;
+  intentId: string;
+  fromStatus: PaymentIntentStatus;
+  toStatus: PaymentIntentStatus;
+  txHash?: string | null;
+  /** Who moved it: `api`, `validate`, `observer` or `system`. */
+  actor: string;
+  reason?: string | null;
+  createdAt: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Asset registry
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Query for `GET /v1/assets`. */
+export interface ListRegistryAssetsOptions {
+  network?: 'public' | 'testnet';
+  /** Only the entries whose issuer was checked against the named organization. */
+  verified?: boolean;
+}
+
+/** One `(code, issuer)` pair the server vouches for — or lists, unverified. */
+export interface RegistryAssetData {
+  code: string;
+  /** Issuing account, or `null` for native XLM. */
+  issuer: string | null;
+  name: string;
+  /** Who issues it, for display next to the code. */
+  issuerName: string;
+  /** The issuer's own on-chain `home_domain`, or empty when it publishes none. */
+  issuerDomain: string;
+  /** The issuing account was checked against `issuerName` — identity, not quality. */
+  verified: boolean;
+  /** Stellar Asset Contract id, when wrapped for Soroban. */
+  contract: string | null;
+  flags: { authRevocable: boolean; clawback: boolean };
+}
+
+/** Raw `GET /v1/assets` response. */
+export interface AssetRegistryData {
+  network: 'public' | 'testnet';
+  /** Monotonic registry version: compare it against a bundled copy. */
+  version: number;
+  data: RegistryAssetData[];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Aliases (payment handles)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type AliasChallengePurpose = 'CLAIM' | 'ADD_ADDRESS' | 'RECOVER';
+
+/** One verified address an alias points at. */
+export interface AliasAddressData {
+  id: string;
+  address: string;
+  network: string;
+  label?: string | null;
+  /** The default for this network. */
+  isPrimary: boolean;
+  /** When this address proved control of itself. */
+  verifiedAt: string;
+}
+
+/** `GET /v1/aliases/resolve/{name}` — where to pay a handle. */
+export interface AliasResolutionData {
+  name: string;
+  displayName: string;
+  /** Every verified address on the requested network, primary first. */
+  addresses: AliasAddressData[];
+  /** The address to pay when the payer did not choose one. */
+  primaryAddress?: string | null;
+}
+
+/** `GET /v1/aliases/availability/{name}`. */
+export interface AliasAvailabilityData {
+  name: string;
+  available: boolean;
+  /** Why not, when unavailable: `taken`, `reserved`, `bad_characters`, … */
+  reason?: string | null;
+}
+
+/** `GET /v1/aliases/by-address/{address}`. */
+export interface AliasByAddressData {
+  data: { name: string; displayName: string; network: string; isPrimary: boolean }[];
+}
+
+/** Body for `POST /v1/aliases/challenges`. */
+export interface CreateAliasChallengeOptions {
+  /** The handle being claimed. */
+  name: string;
+  address: string;
+  /** Network id: `public`, `testnet`, or a custom id. */
+  network: string;
+  purpose?: AliasChallengePurpose;
+}
+
+/** A nonce to sign — `POST /v1/aliases/challenges`. */
+export interface AliasChallengeData {
+  nonce: string;
+  /** The EXACT string to digest and sign. Sign this, never a string you rebuilt. */
+  message: string;
+  /** Domain tag the digest is framed with. */
+  domain: string;
+  purpose: AliasChallengePurpose;
+  expiresAt: string;
+}
+
+/** Body for `POST /v1/aliases`. */
+export interface ClaimAliasOptions {
+  name: string;
+  /** Recovery mailbox — required at claim time. */
+  email: string;
+  /** The nonce from a CLAIM challenge. */
+  nonce: string;
+  /** base64 ed25519 over the challenge digest. */
+  signature: string;
+  /** Human label for this first address. */
+  label?: string;
+}
+
+/** Body for `POST /v1/aliases/{name}/addresses`. */
+export interface AddAliasAddressOptions {
+  address: string;
+  network: string;
+  /** The nonce from an ADD_ADDRESS challenge. */
+  nonce: string;
+  signature: string;
+  label?: string;
+  /** Make this the address a payer gets when they do not ask for one. */
+  primary?: boolean;
+}
+
+/** Body for `POST /v1/aliases/{name}/recovery/complete`. */
+export interface CompleteAliasRecoveryOptions {
+  /** The token delivered by email. */
+  token: string;
+  /** The address that will own the alias from now on. */
+  address: string;
+  network: string;
+  /** The nonce from a RECOVER challenge. */
+  nonce: string;
+  signature: string;
+}
+
+/** An alias the caller owns. */
+export interface OwnedAliasData {
+  id: string;
+  /** Normalized handle — the form uniqueness is decided on. */
+  name: string;
+  /** As the claimant typed it. Display only. */
+  displayName: string;
+  status: 'ACTIVE' | 'SUSPENDED';
+  addresses: AliasAddressData[];
+  createdAt: string;
+  email: string;
+  emailVerifiedAt?: string | null;
+}
+
+/** Raw `GET /v1/aliases` page. */
+export interface AliasListData {
+  data: OwnedAliasData[];
+  total: number;
+  take: number;
+  skip: number;
+}
+
+/** `DELETE` answers for aliases and alias addresses. */
+export interface AliasDeletedData {
+  id: string;
+  deleted: boolean;
+}

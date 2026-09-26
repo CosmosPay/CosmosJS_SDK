@@ -1,0 +1,29 @@
+{
+  "$comment": "Server operations this SDK deliberately does not wrap, each with the reason. test/openapi.test.mjs fails on any operation that is neither called by the SDK nor listed here, and on any entry here that the SDK now implements or the server no longer serves.",
+  "operations": {
+    "GET /v1/wallet/auth/providers": "The Cosmos Wallet's own sign-in. It proves who a PERSON is and hands a wallet app a session token; a server holding an API key has no person to sign in.",
+    "POST /v1/wallet/auth/oauth/authorize": "The Cosmos Wallet's own sign-in — see GET /v1/wallet/auth/providers.",
+    "GET /v1/wallet/auth/oauth/callback/{provider}": "A browser navigation from Google/GitHub/Authentik, not an API call.",
+    "GET /v1/wallet/auth/oauth/session/{state}": "The Cosmos Wallet's own sign-in — see GET /v1/wallet/auth/providers.",
+    "POST /v1/wallet/auth/oauth/claim": "The Cosmos Wallet's own sign-in — see GET /v1/wallet/auth/providers.",
+    "POST /v1/wallet/auth/email/start": "The Cosmos Wallet's own sign-in — see GET /v1/wallet/auth/providers.",
+    "POST /v1/wallet/auth/email/verify": "The Cosmos Wallet's own sign-in — see GET /v1/wallet/auth/providers.",
+    "POST /v1/wallet/auth/finish": "Needs the wallet's session token AND a signature by the key on the device; a server-side SDK holds neither.",
+    "PUT /v1/wallet/backup": "Stores a seed box sealed on the device under the person's password; only the wallet that sealed it can produce one.",
+    "POST /v1/wallet/recovery/setup": "Sponsors the wallet's own SEP-30 enrolment, gated by its sign-in session and a signature by the device key.",
+    "GET /.well-known/stellar.toml": "SEP-1 discovery on a recovery server, read by SEP-10/SEP-30 clients — a standard with its own client libraries, not this API.",
+    "GET /v1/sep10/auth": "SEP-10 web authentication on a recovery server: use a SEP-10 client; the credential is a signature by the account, not an API key.",
+    "POST /v1/sep10/auth": "SEP-10 web authentication — see GET /v1/sep10/auth.",
+    "POST /v1/sep30/identity": "SEP-30 external authentication on a recovery server (an OIDC ID token for the person who lost their device).",
+    "POST /v1/sep30/identity/email/start": "SEP-30 external authentication on a recovery server — see POST /v1/sep30/identity.",
+    "POST /v1/sep30/identity/email/verify": "SEP-30 external authentication on a recovery server — see POST /v1/sep30/identity.",
+    "GET /v1/sep30/accounts": "SEP-30 account recovery, authenticated with a SEP-10 or identity token from that server — a standard with its own clients.",
+    "POST /v1/sep30/accounts/{address}": "SEP-30 account recovery — see GET /v1/sep30/accounts.",
+    "PUT /v1/sep30/accounts/{address}": "SEP-30 account recovery — see GET /v1/sep30/accounts.",
+    "GET /v1/sep30/accounts/{address}": "SEP-30 account recovery — see GET /v1/sep30/accounts.",
+    "DELETE /v1/sep30/accounts/{address}": "SEP-30 account recovery — see GET /v1/sep30/accounts.",
+    "POST /v1/sep30/accounts/{address}/sign/{signer}": "SEP-30 account recovery — see GET /v1/sep30/accounts.",
+    "GET /v1/pollar/oauth/callback": "A browser navigation back from Pollar's hosted login, not an API call.",
+    "GET /v1/pollar/oauth/callback/{state}": "A browser navigation back from Pollar's hosted login, not an API call."
+  }
+}

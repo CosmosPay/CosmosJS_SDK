@@ -1,5 +1,7 @@
 import { EventEmitter } from 'node:events';
+import { AliasManager } from '@/managers/AliasManager';
 import { AnalyticsManager } from '@/managers/AnalyticsManager';
+import { AssetManager } from '@/managers/AssetManager';
 import { CustomerManager } from '@/managers/CustomerManager';
 import { HealthManager } from '@/managers/HealthManager';
 import { LiquidityManager } from '@/managers/LiquidityManager';
@@ -157,6 +159,10 @@ export class Client extends EventEmitter {
   public readonly analytics: AnalyticsManager;
   /** Service health probes (public). */
   public readonly health: HealthManager;
+  /** Payment handles: resolve, claim and manage `@name` aliases. */
+  public readonly aliases: AliasManager;
+  /** The asset registry: which `(code, issuer)` pairs exist per network, and who issues them. */
+  public readonly assets: AssetManager;
 
   constructor(options: ClientOptions) {
     super();
@@ -206,6 +212,8 @@ export class Client extends EventEmitter {
     this.customers = new CustomerManager(this);
     this.analytics = new AnalyticsManager(this);
     this.health = new HealthManager(this);
+    this.aliases = new AliasManager(this);
+    this.assets = new AssetManager(this);
   }
 
   /** Update the API key used for subsequent requests. */

@@ -56,6 +56,8 @@ export type {
 export { CustomerManager } from '@/managers/CustomerManager';
 export { AnalyticsManager } from '@/managers/AnalyticsManager';
 export { HealthManager } from '@/managers/HealthManager';
+export { AliasManager } from '@/managers/AliasManager';
+export { AssetManager } from '@/managers/AssetManager';
 
 // Structures
 export { Base } from '@/structures/Base';
