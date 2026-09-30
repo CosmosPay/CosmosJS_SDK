@@ -43,6 +43,31 @@ export const WebhookEventType = {
   PaymentIntentFailed: 'PAYMENT_INTENT_FAILED',
   PaymentIntentCancelled: 'PAYMENT_INTENT_CANCELLED',
   PaymentIntentDeleted: 'PAYMENT_INTENT_DELETED',
+  // Fiat (BlindPay), re-emitted once the server syncs them.
+  ReceiverUpdated: 'RECEIVER_UPDATED',
+  PayinCreated: 'PAYIN_CREATED',
+  PayinUpdated: 'PAYIN_UPDATED',
+  PayinCompleted: 'PAYIN_COMPLETED',
+  PayoutCreated: 'PAYOUT_CREATED',
+  PayoutUpdated: 'PAYOUT_UPDATED',
+  PayoutCompleted: 'PAYOUT_COMPLETED',
+  // Same-chain swaps on every chain (Stellar, Solana, Monad).
+  SwapCreated: 'SWAP_CREATED',
+  SwapSubmitted: 'SWAP_SUBMITTED',
+  SwapSucceeded: 'SWAP_SUCCEEDED',
+  SwapFailed: 'SWAP_FAILED',
+  // Liquidity pool operations.
+  LiquidityCreated: 'LIQUIDITY_CREATED',
+  LiquiditySubmitted: 'LIQUIDITY_SUBMITTED',
+  LiquiditySucceeded: 'LIQUIDITY_SUCCEEDED',
+  LiquidityFailed: 'LIQUIDITY_FAILED',
+  // Cross-chain swaps (NEAR Intents).
+  CrossChainSwapCreated: 'CROSS_CHAIN_SWAP_CREATED',
+  CrossChainSwapUpdated: 'CROSS_CHAIN_SWAP_UPDATED',
+  CrossChainSwapSucceeded: 'CROSS_CHAIN_SWAP_SUCCEEDED',
+  CrossChainSwapRefunded: 'CROSS_CHAIN_SWAP_REFUNDED',
+  CrossChainSwapFailed: 'CROSS_CHAIN_SWAP_FAILED',
+  CrossChainSwapExpired: 'CROSS_CHAIN_SWAP_EXPIRED',
 } as const;
 export type WebhookEventType =
   (typeof WebhookEventType)[keyof typeof WebhookEventType];
@@ -300,6 +325,50 @@ export interface WebhookEvent<T = PaymentIntentData> {
   data: T;
 }
 
+/** What each webhook event carries in `data`. */
+export interface WebhookEventDataMap {
+  PAYMENT_INTENT_CREATED: PaymentIntentData;
+  PAYMENT_INTENT_UPDATED: PaymentIntentData;
+  PAYMENT_INTENT_SUCCEEDED: PaymentIntentData;
+  PAYMENT_INTENT_FAILED: PaymentIntentData;
+  PAYMENT_INTENT_CANCELLED: PaymentIntentData;
+  PAYMENT_INTENT_DELETED: PaymentIntentData;
+  /** Identity and state only — ids, status, rails; never personal data. */
+  RECEIVER_UPDATED: Record<string, unknown>;
+  PAYIN_CREATED: Record<string, unknown>;
+  PAYIN_UPDATED: Record<string, unknown>;
+  PAYIN_COMPLETED: Record<string, unknown>;
+  PAYOUT_CREATED: Record<string, unknown>;
+  PAYOUT_UPDATED: Record<string, unknown>;
+  PAYOUT_COMPLETED: Record<string, unknown>;
+  /** A Stellar swap, or a Solana / Monad one (it carries `chain`). */
+  SWAP_CREATED: SwapData | ChainSwapData;
+  SWAP_SUBMITTED: SwapData | ChainSwapData;
+  SWAP_SUCCEEDED: SwapData | ChainSwapData;
+  SWAP_FAILED: SwapData | ChainSwapData;
+  LIQUIDITY_CREATED: LiquidityOperationData;
+  LIQUIDITY_SUBMITTED: LiquidityOperationData;
+  LIQUIDITY_SUCCEEDED: LiquidityOperationData;
+  LIQUIDITY_FAILED: LiquidityOperationData;
+  CROSS_CHAIN_SWAP_CREATED: CrossChainSwapData;
+  CROSS_CHAIN_SWAP_UPDATED: CrossChainSwapData;
+  CROSS_CHAIN_SWAP_SUCCEEDED: CrossChainSwapData;
+  CROSS_CHAIN_SWAP_REFUNDED: CrossChainSwapData;
+  CROSS_CHAIN_SWAP_FAILED: CrossChainSwapData;
+  CROSS_CHAIN_SWAP_EXPIRED: CrossChainSwapData;
+}
+
+/** One webhook event of a known type, with `data` typed for it. */
+export type TypedWebhookEvent<K extends keyof WebhookEventDataMap> = Omit<
+  WebhookEvent<WebhookEventDataMap[K]>,
+  'type'
+> & { type: K };
+
+/** Any webhook event — narrow on `type` to get `data` typed. */
+export type AnyWebhookEvent = {
+  [K in keyof WebhookEventDataMap]: TypedWebhookEvent<K>;
+}[keyof WebhookEventDataMap];
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Products
 // ─────────────────────────────────────────────────────────────────────────────
@@ -495,17 +564,32 @@ export interface HealthCheckData {
 // Swaps
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * The chain a same-chain swap runs on. `stellar` (the default when omitted) is
+ * the Stellar DEX; `solana` goes through Jupiter and `monad` through Kuru Flow,
+ * both mainnet only.
+ */
+export type SwapChain = 'stellar' | 'solana' | 'monad';
+
+/** The chains off Stellar, whose swaps come back as a {@link ChainSwapData}. */
+export type OtherSwapChain = Exclude<SwapChain, 'stellar'>;
+
 /** Body for `POST /v1/swaps/quote` (pricing only; no fee parameter — the fee is enforced server-side per organization). */
 export interface QuoteSwapOptions {
-  /** Amount to send, as a decimal string (max 7 decimals). */
+  /** Which chain to swap on. Omitted means Stellar. */
+  chain?: SwapChain;
+  /** Amount to send, as a decimal string in the asset's own units (max 7 decimals on Stellar). */
   amount: string;
-  /** Source asset code. Omit (or `XLM`/`native`) for native lumens. */
+  /**
+   * Stellar: asset code (omit, `XLM` or `native` for lumens). Solana / Monad:
+   * `SOL` / `MON`, `native`, or the SPL mint / ERC-20 address.
+   */
   sourceAssetCode?: string;
-  /** Issuer account for a non-native source asset. */
+  /** Stellar only: issuer account for a non-native source asset. */
   sourceAssetIssuer?: string;
-  /** Destination asset code the swap should deliver. */
+  /** The asset the swap should deliver, spelled as for `sourceAssetCode`. */
   destAssetCode: string;
-  /** Issuer account for a non-native destination asset. */
+  /** Stellar only: issuer account for a non-native destination asset. */
   destAssetIssuer?: string;
   /** Allowed slippage in basis points. */
   slippageBps?: number;
@@ -513,22 +597,39 @@ export interface QuoteSwapOptions {
 
 /** Body for `POST /v1/swaps`. */
 export interface CreateSwapOptions extends QuoteSwapOptions {
-  /** Source account performing the swap. A registered address-book name also works. */
+  /** Source account performing (and signing) the swap, on `chain`. A registered address-book name also works on Stellar. */
   source: string;
-  /** Destination account that receives the swapped asset. Defaults to the source. */
+  /** Stellar only: account that receives the swapped asset. Defaults to the source. */
   destination?: string;
-  /** MEMO_ID (numeric uint64) for idempotency + on-chain identification. */
+  /** Stellar only: MEMO_ID (numeric uint64) for idempotency + on-chain identification. */
   memo?: string;
+  /** Idempotency key (the `Idempotency-Key` header is preferred when both are set). */
+  idempotencyKey?: string;
 }
 
-/** Body for `POST /v1/swaps/:id/submit`. */
-export interface SubmitSwapOptions {
-  /** Signed transaction envelope (base64 XDR) to relay to the network. */
-  signedXdr: string;
-}
+/**
+ * Body for `POST /v1/swaps/:id/submit`: `signedXdr` for a Stellar swap,
+ * `signedTransaction` for a Solana or Monad one.
+ */
+export type SubmitSwapOptions =
+  | {
+      /** Signed transaction envelope (base64 XDR) to relay to the Stellar network. */
+      signedXdr: string;
+      signedTransaction?: never;
+    }
+  | {
+      /**
+       * Solana: base64 wire bytes of the signed VersionedTransaction. Monad: the
+       * `0x`-hex raw signed EIP-1559 transaction.
+       */
+      signedTransaction: string;
+      signedXdr?: never;
+    };
 
 /** Query for `GET /v1/swaps`. */
 export interface ListSwapsOptions {
+  /** Which chain to list. Omitted means Stellar. */
+  chain?: SwapChain;
   status?: SwapStatus;
   /** Page size (max 100, default 20). */
   take?: number;
@@ -575,7 +676,12 @@ export interface SwapListData {
 /** Raw pricing quote returned by `POST /v1/swaps/quote`. */
 export interface SwapQuoteData {
   network: string;
+  /** Solana and Monad quotes only. */
+  chain?: OtherSwapChain;
+  /** The aggregator that priced a Solana or Monad swap. */
+  provider?: 'jupiter' | 'kuru';
   source: { asset: string; issuer: string | null; amount: string };
+  /** Stellar takes the fee from the source asset; Solana and Monad from the output (`asset` says which). */
   fee: { asset: string; issuer: string | null; amount: string; bps: number; wallet: string | null };
   swap: { asset: string; issuer: string | null; amount: string };
   destination: {
@@ -596,6 +702,219 @@ export interface SwapSubmitOutcomeData {
   reason?: string;
   resultCodes?: string[];
   swap: SwapData;
+}
+
+/**
+ * What a Solana or Monad swap's wallet signs. Solana: an unsigned
+ * VersionedTransaction; Monad: a call the wallet signs as an EIP-1559
+ * transaction, filling in nonce and gas itself.
+ */
+export type ChainSwapTransaction =
+  | { encoding: 'base64'; data: string; lastValidBlockHeight?: number }
+  | { to: string; data: string; value: string; chainId: number };
+
+/** An EVM call the wallet sends itself (a Monad ERC-20 `approve`). */
+export interface EvmCallData {
+  to: string;
+  data: string;
+  value: string;
+  chainId: number;
+}
+
+/** Raw Solana or Monad swap (`chain_swap`), built by Jupiter or Kuru Flow. */
+export interface ChainSwapData {
+  id: string;
+  chain: OtherSwapChain;
+  /** Always `public`: the aggregators run on mainnet only. */
+  network: string;
+  provider: 'jupiter' | 'kuru';
+  status: SwapStatus;
+  /** The wallet that signs, pays and receives. */
+  source: string;
+  /** `native` (SOL / MON), or the SPL mint / ERC-20 address. */
+  sendAsset: string;
+  sendAmount: string;
+  destAsset: string;
+  /** Quoted output, net of the commission. */
+  destEstimated: string;
+  /** On-chain minimum after slippage. */
+  destMin: string;
+  feeBps: number;
+  /** The commission, in the destination asset (taken from the output). */
+  feeAmount: string;
+  slippageBps: number;
+  path: { code: string; issuer: string | null }[];
+  transaction: ChainSwapTransaction;
+  /** Monad, selling an ERC-20 with too small an allowance: send and confirm this first. */
+  approval: EvmCallData | null;
+  /** The Solana signature / EVM hash, once submitted. */
+  txHash: string | null;
+  idempotencyKey: string | null;
+  /** Submit refuses the transaction after this; build a new swap. */
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Raw paginated list of Solana or Monad swaps. */
+export interface ChainSwapListData {
+  data: ChainSwapData[];
+  total: number;
+  take: number;
+  skip: number;
+}
+
+/** Raw outcome of relaying a signed Solana or Monad swap. */
+export interface ChainSwapSubmitOutcomeData {
+  submitted: boolean;
+  status: SwapStatus;
+  txHash: string;
+  swap: ChainSwapData;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cross-chain swaps (NEAR Intents)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Where a cross-chain swap stands. SUCCEEDED, REFUNDED and FAILED are final. */
+export const CrossChainSwapStatus = {
+  AwaitingDeposit: 'AWAITING_DEPOSIT',
+  DepositDetected: 'DEPOSIT_DETECTED',
+  IncompleteDeposit: 'INCOMPLETE_DEPOSIT',
+  Processing: 'PROCESSING',
+  Succeeded: 'SUCCEEDED',
+  Refunded: 'REFUNDED',
+  Failed: 'FAILED',
+  Expired: 'EXPIRED',
+} as const;
+export type CrossChainSwapStatus =
+  (typeof CrossChainSwapStatus)[keyof typeof CrossChainSwapStatus];
+
+/** A token NEAR Intents can swap on one of the supported chains. */
+export interface CrossChainAssetData {
+  chain: SwapChain;
+  symbol: string;
+  /** NEAR Intents' id for the asset. */
+  assetId: string;
+  decimals: number;
+  /** SPL mint, ERC-20 address or Stellar issuer; null for the native coin. */
+  contract: string | null;
+}
+
+/**
+ * Body for `POST /v1/cross-chain-swaps/quote`. Both legs on one chain is not a
+ * cross-chain swap — use `client.swaps` with `chain`.
+ */
+export interface QuoteCrossChainSwapOptions {
+  originChain: SwapChain;
+  /** Native ticker, a symbol listed once, a contract, or Stellar `CODE:ISSUER`. */
+  originAsset: string;
+  destinationChain: SwapChain;
+  destinationAsset: string;
+  /** Gross amount of the origin asset, in its own units. */
+  amount: string;
+  /** Who receives the output, on `destinationChain`. */
+  recipient: string;
+  /** Where a failed or late deposit is refunded, on `originChain`. */
+  refundTo: string;
+  slippageBps?: number;
+}
+
+/** Body for `POST /v1/cross-chain-swaps`. */
+export interface CreateCrossChainSwapOptions extends QuoteCrossChainSwapOptions {
+  idempotencyKey?: string;
+}
+
+/** Raw cross-chain quote. */
+export interface CrossChainQuoteData {
+  network: string;
+  origin: {
+    chain: SwapChain;
+    asset: string;
+    assetId: string;
+    contract: string | null;
+    amount: string;
+    amountUsd: string | null;
+  };
+  destination: {
+    chain: SwapChain;
+    asset: string;
+    assetId: string;
+    contract: string | null;
+    amount: string;
+    amountUsd: string | null;
+    /** Below this NEAR Intents refunds instead of filling. */
+    minimum: string;
+  };
+  /** The plan commission, taken by NEAR Intents out of the input. */
+  fee: { bps: number; amount: string; asset: string };
+  slippageBps: number;
+  timeEstimateSeconds: number;
+}
+
+/** A settlement transaction NEAR Intents reports. */
+export interface CrossChainTransactionData {
+  hash: string;
+  explorerUrl: string;
+}
+
+/** Raw cross-chain swap. */
+export interface CrossChainSwapData {
+  id: string;
+  status: CrossChainSwapStatus;
+  /** NEAR Intents' own status word, verbatim. */
+  providerStatus: string;
+  network: string;
+  originChain: SwapChain;
+  originAsset: string;
+  originContract: string | null;
+  destinationChain: SwapChain;
+  destinationAsset: string;
+  destinationContract: string | null;
+  amountIn: string;
+  feeBps: number;
+  feeAmount: string;
+  amountOutEstimated: string;
+  amountOutMin: string;
+  slippageBps: number;
+  recipient: string;
+  refundTo: string;
+  /** Send exactly `amountIn` of the origin asset here. */
+  depositAddress: string;
+  /** Stellar only, and required: attach it as a MEMO_TEXT. */
+  depositMemo: string | null;
+  /** The deposit as a wallet link: SEP-7 pay, Solana Pay or EIP-681. */
+  depositUri: string;
+  /** QR of `depositUri` (PNG data URL); absent from list rows. */
+  qr?: string;
+  depositTxHash: string | null;
+  amountOut: string | null;
+  refundedAmount: string | null;
+  originTxHashes: CrossChainTransactionData[] | null;
+  destinationTxHashes: CrossChainTransactionData[] | null;
+  timeEstimateSeconds: number;
+  correlationId: string;
+  /** NEAR Intents' signature over the quote and deposit address — keep it. */
+  quoteSignature: string;
+  idempotencyKey: string | null;
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Query for `GET /v1/cross-chain-swaps`. */
+export interface ListCrossChainSwapsOptions {
+  status?: CrossChainSwapStatus;
+  take?: number;
+  skip?: number;
+}
+
+/** Raw paginated list of cross-chain swaps. */
+export interface CrossChainSwapListData {
+  data: CrossChainSwapData[];
+  total: number;
+  take: number;
+  skip: number;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1476,219 +1795,6 @@ export interface WalletSignMessageData {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Pollar (social login + custodial wallets)
-// ─────────────────────────────────────────────────────────────────────────────
-
-/** Identity providers a Pollar login can go through. */
-export type PollarProvider = 'google' | 'github';
-
-/** State of a login, polled between the redirect and the token exchange. */
-export type PollarLoginStatus =
-  | 'pending'
-  | 'authorized'
-  | 'exchanging'
-  | 'consumed'
-  | 'failed'
-  | 'expired';
-
-/** A Pollar wallet, as returned alongside a session or a registration. */
-export interface PollarWalletData {
-  type: 'internal' | 'smart' | 'external';
-  address: string | null;
-  chain: 'STELLAR' | 'POLYGON' | 'SOLANA';
-  /** False until the reserve is funded — see {@link PollarManager.activateWallet}. */
-  exists_on_stellar?: boolean;
-  funding_mode?: 'IMMEDIATE' | 'DEFERRED';
-  network?: string;
-}
-
-/** The public half of the DPoP key a client binds its session to. */
-export interface PollarDpopJwk {
-  kty: 'EC';
-  crv: 'P-256';
-  x: string;
-  y: string;
-}
-
-/** The fields both login flows accept. */
-export interface PollarAuthorizeBaseOptions {
-  provider: PollarProvider;
-  code_challenge_method?: 'S256';
-  /** Binds the resulting session to a key this client holds. */
-  dpop_jwk?: PollarDpopJwk;
-  /** Shown to the user in their session list. */
-  device_label?: string;
-}
-
-/**
- * Body for `POST /v1/pollar/oauth/authorize`.
- *
- * The code that comes back is redeemed with the `code_verifier` the challenge was
- * derived from, so an intercepted code is worth nothing without the client that
- * started the flow. How much that matters depends on the flow, and the type follows:
- *
- *  - **Redirect** (`redirect_uri` set): `code_challenge` is required. The code crosses
- *    a browser, and the public callback hands it to whoever presents `state` — which
- *    is inside `authorization_url` — so the service answers `400 validation_failed`
- *    to a redirect-flow authorize without one.
- *  - **Poll** (no `redirect_uri`): the code only travels over your authenticated
- *    channel, so PKCE is optional. Send it anyway.
- */
-export type PollarAuthorizeOptions =
-  | (PollarAuthorizeBaseOptions & {
-      /** Where the browser lands with the code. Must be allow-listed for the consumer. */
-      redirect_uri: string;
-      /** Base64url SHA-256 of the verifier held by the client. */
-      code_challenge: string;
-    })
-  | (PollarAuthorizeBaseOptions & {
-      redirect_uri?: undefined;
-      /** Base64url SHA-256 of the verifier held by the client. */
-      code_challenge?: string;
-    });
-
-/** Raw authorize response — where to send the user, and what to poll. */
-export interface PollarAuthorizeData {
-  /** Correlates the login. Poll `sessions/{state}` with it. */
-  state: string;
-  /** The URL to open for the user. */
-  authorization_url: string;
-  provider: PollarProvider;
-  redirect_uri: string | null;
-  expires_at: string;
-}
-
-/** Raw polling response for a login in progress. */
-export interface PollarLoginSessionData {
-  status: PollarLoginStatus;
-  state: string;
-  /** The bridge code to redeem — present once `status` is `authorized`. */
-  code?: string;
-  code_expires_at?: string | null;
-  error_code?: string | null;
-}
-
-/** Body for `POST /v1/pollar/oauth/token`. */
-export interface PollarTokenOptions {
-  /** The bridge code collected from the polled session. */
-  code: string;
-  /** The PKCE verifier the challenge was derived from. Required when `authorize` sent a `code_challenge`. */
-  code_verifier?: string;
-}
-
-/** A user profile as Pollar knows it. */
-export interface PollarProfileData {
-  email?: string;
-  first_name?: string;
-  last_name?: string;
-  avatar?: string;
-  [key: string]: unknown;
-}
-
-/** Raw Pollar session — the tokens, the wallets and the profile. */
-export interface PollarSessionData {
-  access_token: string;
-  refresh_token?: string;
-  token_type?: 'Bearer' | 'DPoP';
-  /** Unix seconds. */
-  expires_at?: number;
-  user_id?: string | null;
-  /** The primary wallet; `wallets` carries the rest. */
-  wallet?: PollarWalletData;
-  wallets?: PollarWalletData[];
-  profile?: PollarProfileData;
-}
-
-/** Body for `POST /v1/pollar/oauth/refresh`. */
-export interface PollarRefreshOptions {
-  refresh_token: string;
-}
-
-/** Raw rotated token pair. */
-export interface PollarRefreshData {
-  access_token: string;
-  refresh_token?: string;
-  token_type?: 'Bearer';
-  expires_at?: number;
-}
-
-/** Body for `POST /v1/pollar/oauth/logout`. */
-export interface PollarLogoutOptions {
-  access_token: string;
-  /** Revoke every device, not just this one. */
-  everywhere?: boolean;
-}
-
-/** How many sessions the logout revoked. */
-export interface PollarLogoutData {
-  revoked: number;
-}
-
-/** Body for `POST /v1/pollar/wallets/activate`. */
-export interface ActivatePollarWalletOptions {
-  public_key: string;
-}
-
-/** Raw activation result — the reserve that was funded. */
-export interface PollarActivationData {
-  public_key: string;
-  /** XLM sent to cover the base reserve. */
-  amount: string;
-  activated: boolean;
-}
-
-/** One asset to enable on a wallet. */
-export interface PollarTrustlineAsset {
-  code: string;
-  issuer: string;
-}
-
-/** Body for `POST /v1/pollar/wallets/:address/trustlines`. */
-export interface PollarTrustlinesOptions {
-  assets: PollarTrustlineAsset[];
-}
-
-/** Raw trustline result — a status code for the operation. */
-export interface PollarTrustlineData {
-  code: string;
-  [key: string]: unknown;
-}
-
-/** Body for `POST /v1/pollar/users` and `/users/with-wallet`. */
-export interface RegisterPollarUserOptions {
-  /** Your own id for this user — how you find them again. */
-  external_id: string;
-  email?: string;
-  first_name?: string;
-  last_name?: string;
-  avatar?: string;
-}
-
-/** Raw registration result. */
-export interface PollarUserData {
-  external_id: string;
-  code: 'SERVER_USER_REGISTERED' | 'SERVER_USER_WALLET_CREATED';
-  user_id: string | null;
-  wallet?: PollarWalletData;
-}
-
-/** Body for `POST /v1/pollar/tokens/verify`. */
-export interface VerifyPollarTokenOptions {
-  token: string;
-}
-
-/** Raw verification result — who the token belongs to, and until when. */
-export interface PollarTokenVerificationData {
-  user_id: string;
-  application_id: string;
-  /** Unix seconds. */
-  expires_at: number;
-  network?: string;
-  auth_provider?: string;
-  wallet?: PollarWalletData;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Payment intent history
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1866,4 +1972,90 @@ export interface AliasListData {
 export interface AliasDeletedData {
   id: string;
   deleted: boolean;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Alias recovery (email)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Answer of `POST /v1/aliases/:name/recovery` — the same whether or not the mailbox matches. */
+export interface AliasRecoveryStartedData {
+  accepted: boolean;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared public key
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** The shared public API key an open-source wallet embeds, per environment. */
+export interface PublicKeyData {
+  env: 'dev' | 'prod';
+  apiKey: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Plugins
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** A plugin this deployment serves, and this consumer's installation of it. */
+export interface PluginData {
+  slug: string;
+  name: string;
+  version: string;
+  description: string;
+  author: string;
+  /** What the plugin may do; installing is consenting to exactly this list. */
+  capabilities: string[];
+  /** Hosts the plugin may call out to. */
+  egress: string[];
+  config: Record<string, unknown>;
+  queries: unknown[];
+  commands: unknown[];
+  events: unknown[];
+  /** Null when this consumer has not installed it. */
+  installation: Record<string, unknown> | null;
+}
+
+export interface PluginListData {
+  data: PluginData[];
+}
+
+/** Body for `PUT /v1/plugins/:slug/installation`. */
+export interface InstallPluginOptions {
+  /** Exactly the capabilities the plugin declares — consent is all or nothing. */
+  grantCapabilities: string[];
+  config?: Record<string, unknown>;
+}
+
+export interface PluginUninstalledData {
+  slug: string;
+  uninstalled: boolean;
+}
+
+/** Result of a plugin query or command. */
+export interface PluginActionResultData<T = unknown> {
+  plugin: string;
+  action: string;
+  output: T;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DeFindex vaults (native plugin, Stellar)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Body for `POST /v1/defindex/vaults/:vault/deposit`. */
+export interface DefindexDepositOptions {
+  /** One amount per vault asset, in its base units. */
+  amounts: string[];
+  /** The account that signs. */
+  caller: string;
+  invest?: boolean;
+  slippageBps?: number;
+}
+
+/** Body for `POST /v1/defindex/vaults/:vault/withdraw`. */
+export interface DefindexWithdrawOptions {
+  shares: string;
+  caller: string;
+  slippageBps?: number;
 }

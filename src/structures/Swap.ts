@@ -1,14 +1,10 @@
 import type { Client } from '@/client/Client';
-import {
-  SwapStatus,
-  type SubmitSwapOptions,
-  type SwapData,
-} from '@/types/index';
+import { SwapStatus, type SwapData } from '@/types/index';
 import { Base } from '@/structures/Base';
 import type { SwapSubmitOutcome } from '@/managers/SwapManager';
 
 /**
- * A Stellar path-payment swap.
+ * A Stellar path-payment swap. Solana and Monad swaps are {@link ChainSwap}.
  *
  * Wraps the raw API payload with typed accessors and atomic action methods so
  * you can operate on it directly: `await swap.fetch()`,
@@ -100,16 +96,19 @@ export class Swap extends Base<SwapData> {
   }
 
   /** Re-fetch this swap from the API, returning a fresh instance. */
-  public fetch(): Promise<Swap> {
-    return this.client.swaps.fetch(this.id);
+  public async fetch(): Promise<Swap> {
+    return (await this.client.swaps.fetch(this.id)) as Swap;
   }
 
   /**
    * Relay the signed transaction for this swap. Mutates this instance from the
    * refreshed swap in the outcome and returns the outcome.
    */
-  public async submit(options: SubmitSwapOptions): Promise<SwapSubmitOutcome> {
-    const outcome = await this.client.swaps.submit(this.id, options);
+  public async submit(options: { signedXdr: string }): Promise<SwapSubmitOutcome> {
+    const outcome = (await this.client.swaps.submit(
+      this.id,
+      options,
+    )) as SwapSubmitOutcome;
     this._patch(outcome.swap.toJSON());
     return outcome;
   }

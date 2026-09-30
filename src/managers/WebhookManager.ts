@@ -10,7 +10,9 @@ import type {
   WebhookDeliveryListData,
   WebhookEndpointData,
   WebhookEndpointWithSecretData,
-  WebhookEvent,
+  AnyWebhookEvent,
+  TypedWebhookEvent,
+  WebhookEventDataMap,
   WebhookPingData,
 } from '@/types/index';
 import { BaseManager } from '@/managers/BaseManager';
@@ -44,23 +46,19 @@ export type WebhookHandlerOptions = WebhookProcessOptions;
  * event type (`PAYMENT_INTENT_SUCCEEDED`), its camelCase alias
  * (`paymentIntentSucceeded`), or `event` to catch them all.
  */
-export interface WebhookListenerEvents {
-  event: [WebhookEvent<PaymentIntentData>];
+export type WebhookListenerEvents = { event: [AnyWebhookEvent] } & {
+  [K in keyof WebhookEventDataMap]: [TypedWebhookEvent<K>];
+} & {
+  [K in keyof WebhookEventDataMap as CamelEvent<K>]: [TypedWebhookEvent<K>];
+};
 
-  PAYMENT_INTENT_CREATED: [WebhookEvent<PaymentIntentData>];
-  PAYMENT_INTENT_UPDATED: [WebhookEvent<PaymentIntentData>];
-  PAYMENT_INTENT_SUCCEEDED: [WebhookEvent<PaymentIntentData>];
-  PAYMENT_INTENT_FAILED: [WebhookEvent<PaymentIntentData>];
-  PAYMENT_INTENT_CANCELLED: [WebhookEvent<PaymentIntentData>];
-  PAYMENT_INTENT_DELETED: [WebhookEvent<PaymentIntentData>];
+/** `SWAP_SUCCEEDED` → `SwapSucceeded`. */
+type PascalEvent<S extends string> = S extends `${infer H}_${infer T}`
+  ? `${Capitalize<Lowercase<H>>}${PascalEvent<T>}`
+  : Capitalize<Lowercase<S>>;
 
-  paymentIntentCreated: [WebhookEvent<PaymentIntentData>];
-  paymentIntentUpdated: [WebhookEvent<PaymentIntentData>];
-  paymentIntentSucceeded: [WebhookEvent<PaymentIntentData>];
-  paymentIntentFailed: [WebhookEvent<PaymentIntentData>];
-  paymentIntentCancelled: [WebhookEvent<PaymentIntentData>];
-  paymentIntentDeleted: [WebhookEvent<PaymentIntentData>];
-}
+/** `SWAP_SUCCEEDED` → `swapSucceeded`, the alias each event is also emitted as. */
+type CamelEvent<S extends string> = Uncapitalize<PascalEvent<S>>;
 
 /** Minimal Express-like request (so we don't depend on `@types/express`). */
 interface RequestLike {
@@ -228,7 +226,7 @@ export class WebhookManager extends BaseManager<WebhookEndpoint> {
     rawBody: string | Uint8Array,
     signatureHeader: string | null | undefined,
     options: WebhookProcessOptions = {},
-  ): WebhookEvent<PaymentIntentData> {
+  ): AnyWebhookEvent {
     const secret = options.secret ?? this.client.webhookSecret;
     if (!secret) {
       throw new WebhookSignatureError(
@@ -236,15 +234,14 @@ export class WebhookManager extends BaseManager<WebhookEndpoint> {
       );
     }
 
-    const event = Webhooks.constructEvent<PaymentIntentData>(
-      rawBody,
-      signatureHeader,
-      secret,
-      { toleranceSeconds: options.toleranceSeconds },
-    );
+    // The signature proves the body is the server's; its `type` says which
+    // shape `data` has, which is what AnyWebhookEvent encodes.
+    const event = Webhooks.constructEvent(rawBody, signatureHeader, secret, {
+      toleranceSeconds: options.toleranceSeconds,
+    }) as unknown as AnyWebhookEvent;
 
-    this.emit(event.type, event);
-    this.emit(toCamelEvent(event.type), event);
+    this.emit(event.type, event as never);
+    this.emit(toCamelEvent(event.type), event as never);
     this.emit('event', event);
     return event;
   }

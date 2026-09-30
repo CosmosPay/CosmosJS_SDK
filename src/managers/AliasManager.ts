@@ -8,6 +8,7 @@ import type {
   AliasChallengeData,
   AliasDeletedData,
   AliasListData,
+  AliasRecoveryStartedData,
   AliasResolutionData,
   ClaimAliasOptions,
   CompleteAliasRecoveryOptions,
@@ -98,6 +99,18 @@ export class AliasManager {
   /** Release a handle back to the namespace. */
   public release(name: string): Promise<AliasDeletedData> {
     return this.rest.delete<AliasDeletedData>(`${this.route}/${encodeURIComponent(name)}`);
+  }
+
+  /**
+   * Start a recovery: the service emails a one-time token to the mailbox the
+   * handle was claimed with, if `email` is that mailbox. The answer is the same
+   * either way, so it says nothing about who owns the handle; the token only
+   * ever reaches the mailbox, never this response.
+   */
+  public startRecovery(name: string, email: string): Promise<AliasRecoveryStartedData> {
+    return this.rest.post<AliasRecoveryStartedData>(`${this.route}/${encodeURIComponent(name)}/recovery`, {
+      body: { email },
+    });
   }
 
   /**
