@@ -78,6 +78,7 @@ console.log(`Paid via ${wallet} from ${account}: ${txHash}`);
 - [Web client (browser wallets)](#-web-client-browser-wallets)
 - [Payment intents](#-payment-intents)
 - [Typed assets, wallets & addresses](#-typed-assets-wallets--addresses)
+- [Swaps](#-swaps)
 - [Webhooks](#-webhooks)
 - [Products & customers](#-products--customers)
 - [Analytics & health](#-analytics--health)
@@ -178,6 +179,11 @@ if (outcome.valid) console.log('Settled!', outcome.status);
 | `client.webhooks`        | Webhook endpoints + deliveries    | `create` · `list` · `fetch` · `rotateSecret` · `ping` · `on(...)` · `process` |
 | `client.products`        | Products / prices                 | `create` · `list` · `fetch` · `update` · `delete` |
 | `client.customers`       | Customers                         | `create` · `list` · `fetch` · `update` · `delete` |
+| `client.swaps`           | Same-chain swaps (Stellar DEX, Jupiter, Kuru Flow) | `quote` · `create` · `fetch` · `list` · `submit` |
+| `client.crossChainSwaps` | Swaps between chains (NEAR Intents) | `assets` · `quote` · `create` · `fetch` · `list` · `reportDeposit` |
+| `client.plugins`         | Plugins the deployment serves     | `list` · `fetch` · `install` · `uninstall` · `query` · `command` |
+| `client.defindex`        | DeFindex vaults (native plugin)   | `vaults` · `vault` · `balance` · `deposit` · `withdraw` · `submit` |
+| `client.publicKey`       | The shared public API key         | `fetch` |
 | `client.analytics`       | Read-only metrics & logs          | `summary` · `balances` · `apiLogs` · `webhookLogs` |
 | `client.health`          | Liveness / readiness probes       | `liveness` · `readiness` |
 
@@ -433,6 +439,65 @@ await client.paymentIntents.createPay({ destination: 'merchant', amount: '10' })
 import { isStellarAddress } from '@cosmosapp/pay_sdk';
 isStellarAddress('GC...'); // true
 ```
+
+## 🔁 Swaps
+
+Two managers, split by whether the swap leaves its chain.
+
+**Same chain — `client.swaps`.** No `chain` (or `'stellar'`) is a Stellar path
+payment and yields a `Swap`, exactly as before. `chain: 'solana'` goes through
+Jupiter and `chain: 'monad'` through Kuru Flow — aggregators that route across
+every liquidity source on their chain — and yields a `ChainSwap`. Both are
+non-custodial: the wallet signs, the server checks it is the transaction it
+built, then broadcasts it. Solana and Monad are mainnet only (a `dev` key gets
+`400 network_unsupported`).
+
+```ts
+// Stellar: unchanged
+const swap = await client.swaps.create({
+  amount: '100', destAssetCode: 'USDC', destAssetIssuer: 'GA5Z…', source: 'G…',
+});
+await swap.submit({ signedXdr });
+
+// Solana (Jupiter): sign `transaction.data` (base64 VersionedTransaction)
+const sol = await client.swaps.create({
+  chain: 'solana', amount: '0.1', sourceAssetCode: 'SOL',
+  destAssetCode: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', source: solanaWallet,
+});
+await sol.submit({ signedTransaction });
+
+// Monad (Kuru Flow): sign `transaction` ({ to, data, value, chainId }) as EIP-1559.
+// Selling an ERC-20 with a short allowance: send `approval` first.
+const mon = await client.swaps.create({ chain: 'monad', amount: '10', sourceAssetCode: 'MON',
+  destAssetCode: '0x754704bc059f8c67012fed69bc8a327a5aafb603', source: evmWallet });
+if (mon.approval) await wallet.sendTransaction(mon.approval);
+
+const page = await client.swaps.list({ chain: 'solana' }); // ChainSwap[]
+```
+
+The commission is the organization plan's, enforced by the server — never a
+parameter. On Stellar it comes out of the input; on Solana and Monad, out of the
+output (`fee.asset` in the quote says which).
+
+**Between chains — `client.crossChainSwaps`.** Stellar ⇄ Solana ⇄ Monad, settled
+by NEAR Intents. You get a deposit address (and, on Stellar, a memo to attach as
+a MEMO_TEXT); NEAR Intents pays the recipient on the other chain or refunds.
+
+```ts
+const assets = await client.crossChainSwaps.assets();
+const x = await client.crossChainSwaps.create({
+  originChain: 'stellar', originAsset: 'XLM', amount: '100',
+  destinationChain: 'solana', destinationAsset: 'USDC',
+  recipient: solanaWallet, refundTo: stellarWallet,
+});
+// pay x.amountIn to x.depositAddress (memo x.depositMemo) — or open x.depositUri / x.qr
+await x.reportDeposit(txHash); // optional: starts it without waiting for the indexer
+await x.fetch();               // x.status: AWAITING_DEPOSIT → … → SUCCEEDED | REFUNDED | FAILED
+```
+
+Keep `x.quoteSignature`: it is NEAR Intents' signature over the quote, what
+settles a dispute. Webhooks: `SWAP_*` for both same-chain managers,
+`CROSS_CHAIN_SWAP_*` here — `client.webhooks.on('crossChainSwapSucceeded', …)`.
 
 ## 🔔 Webhooks
 

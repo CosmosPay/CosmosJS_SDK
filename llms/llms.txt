@@ -35,6 +35,7 @@ The files below are atomic and self-contained — read the ones relevant to the 
 ## Recipes
 
 - [Recipes](./14-recipes.md): checkout, donations, idempotent webhooks, reconciliation, testnet/mainnet
+- [Swaps](./15-swaps.md): same-chain swaps (Stellar DEX, Jupiter on Solana, Kuru Flow on Monad) and cross-chain swaps (NEAR Intents)
 
 ## Optional
 

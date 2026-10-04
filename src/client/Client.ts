@@ -9,7 +9,10 @@ import { OnrampManager } from '@/managers/OnrampManager';
 import { OfframpManager } from '@/managers/OfframpManager';
 import { ActivityManager } from '@/managers/ActivityManager';
 import { KycManager } from '@/managers/KycManager';
-import { PollarManager } from '@/managers/PollarManager';
+import { CrossChainSwapManager } from '@/managers/CrossChainSwapManager';
+import { DefindexManager } from '@/managers/DefindexManager';
+import { PluginManager } from '@/managers/PluginManager';
+import { PublicKeyManager } from '@/managers/PublicKeyManager';
 import { PaymentIntentManager } from '@/managers/PaymentIntentManager';
 import { ProductManager } from '@/managers/ProductManager';
 import { SwapManager } from '@/managers/SwapManager';
@@ -139,8 +142,10 @@ export class Client extends EventEmitter {
   public readonly webhooks: WebhookManager;
   /** Products / prices. */
   public readonly products: ProductManager;
-  /** Stellar swaps — quote/create/fetch/list/submit. */
+  /** Same-chain swaps: the Stellar DEX, Jupiter on Solana, Kuru Flow on Monad. */
   public readonly swaps: SwapManager;
+  /** Swaps between Stellar, Solana and Monad, settled by NEAR Intents. */
+  public readonly crossChainSwaps: CrossChainSwapManager;
   /** Liquidity pools: browse, positions, deposit / withdraw. */
   public readonly liquidity: LiquidityManager;
   /** Fiat -> stablecoin: quotes, payins, trustlines, virtual accounts. */
@@ -151,8 +156,6 @@ export class Client extends EventEmitter {
   public readonly activity: ActivityManager;
   /** KYC / KYB: receivers, their wallets and their bank accounts. */
   public readonly kyc: KycManager;
-  /** Pollar: social login, its sessions, and the custodial wallets behind them. */
-  public readonly pollar: PollarManager;
   /** Customers. */
   public readonly customers: CustomerManager;
   /** Read-only analytics (summary, balances, logs). */
@@ -163,6 +166,12 @@ export class Client extends EventEmitter {
   public readonly aliases: AliasManager;
   /** The asset registry: which `(code, issuer)` pairs exist per network, and who issues them. */
   public readonly assets: AssetManager;
+  /** Plugins this deployment serves: install, query, command. */
+  public readonly plugins: PluginManager;
+  /** DeFindex vaults (when the deployment enables the native plugin). */
+  public readonly defindex: DefindexManager;
+  /** The shared public API key an open-source wallet embeds. */
+  public readonly publicKey: PublicKeyManager;
 
   constructor(options: ClientOptions) {
     super();
@@ -203,17 +212,20 @@ export class Client extends EventEmitter {
     this.webhooks = new WebhookManager(this);
     this.products = new ProductManager(this);
     this.swaps = new SwapManager(this);
+    this.crossChainSwaps = new CrossChainSwapManager(this);
     this.liquidity = new LiquidityManager(this);
     this.onramp = new OnrampManager(this);
     this.offramp = new OfframpManager(this);
     this.activity = new ActivityManager(this);
     this.kyc = new KycManager(this);
-    this.pollar = new PollarManager(this);
     this.customers = new CustomerManager(this);
     this.analytics = new AnalyticsManager(this);
     this.health = new HealthManager(this);
     this.aliases = new AliasManager(this);
     this.assets = new AssetManager(this);
+    this.plugins = new PluginManager(this);
+    this.defindex = new DefindexManager(this);
+    this.publicKey = new PublicKeyManager(this);
   }
 
   /** Update the API key used for subsequent requests. */
