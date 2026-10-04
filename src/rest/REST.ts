@@ -126,6 +126,10 @@ export class REST extends EventEmitter {
     return this.request<T>('POST', path, options);
   }
 
+  public put<T>(path: string, options: RequestOptions = {}): Promise<T> {
+    return this.request<T>('PUT', path, options);
+  }
+
   public patch<T>(path: string, options: RequestOptions = {}): Promise<T> {
     return this.request<T>('PATCH', path, options);
   }

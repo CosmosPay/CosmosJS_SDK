@@ -37,7 +37,16 @@ export type {
 } from '@/managers/WebhookManager';
 export { ProductManager } from '@/managers/ProductManager';
 export { SwapManager } from '@/managers/SwapManager';
-export type { SwapPage, SwapSubmitOutcome } from '@/managers/SwapManager';
+export type {
+  SwapPage,
+  SwapSubmitOutcome,
+  ChainSwapSubmitOutcome,
+} from '@/managers/SwapManager';
+export { CrossChainSwapManager } from '@/managers/CrossChainSwapManager';
+export type { CrossChainSwapPage } from '@/managers/CrossChainSwapManager';
+export { PluginManager } from '@/managers/PluginManager';
+export { DefindexManager } from '@/managers/DefindexManager';
+export { PublicKeyManager } from '@/managers/PublicKeyManager';
 export { LiquidityManager } from '@/managers/LiquidityManager';
 export { OnrampManager } from '@/managers/OnrampManager';
 export type { PayinPage } from '@/managers/OnrampManager';
@@ -45,7 +54,6 @@ export { OfframpManager } from '@/managers/OfframpManager';
 export type { PayoutPage } from '@/managers/OfframpManager';
 export { ActivityManager } from '@/managers/ActivityManager';
 export { KycManager } from '@/managers/KycManager';
-export { PollarManager } from '@/managers/PollarManager';
 export type { ReceiverPage, ReceiverWalletPage, BankAccountPage } from '@/managers/KycManager';
 export type { ActivityPage } from '@/managers/ActivityManager';
 export type {
@@ -56,6 +64,8 @@ export type {
 export { CustomerManager } from '@/managers/CustomerManager';
 export { AnalyticsManager } from '@/managers/AnalyticsManager';
 export { HealthManager } from '@/managers/HealthManager';
+export { AliasManager } from '@/managers/AliasManager';
+export { AssetManager } from '@/managers/AssetManager';
 
 // Structures
 export { Base } from '@/structures/Base';
@@ -64,6 +74,8 @@ export { WebhookEndpoint } from '@/structures/WebhookEndpoint';
 export { WebhookDelivery } from '@/structures/WebhookDelivery';
 export { Product } from '@/structures/Product';
 export { Swap } from '@/structures/Swap';
+export { ChainSwap } from '@/structures/ChainSwap';
+export { CrossChainSwap } from '@/structures/CrossChainSwap';
 export { LiquidityOperation } from '@/structures/LiquidityOperation';
 export { Receiver } from '@/structures/Receiver';
 export { Customer } from '@/structures/Customer';
@@ -127,5 +139,6 @@ export {
   WebhookDeliveryStatus,
   ProductKind,
   SwapStatus,
+  CrossChainSwapStatus,
 } from '@/types/index';
 export type * from '@/types/index';

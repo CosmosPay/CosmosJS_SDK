@@ -6,6 +6,7 @@ import type {
   ListPaymentIntentsOptions,
   PaymentIntentData,
   PaymentIntentListData,
+  PaymentIntentTransitionData,
   UpdatePaymentIntentOptions,
   ValidatePaymentIntentOptions,
   ValidationOutcomeData,
@@ -65,6 +66,14 @@ export class PaymentIntentManager extends BaseManager<PaymentIntent> {
   public async fetch(id: string): Promise<PaymentIntent> {
     const data = await this.rest.get<PaymentIntentData>(`${this.route}/${id}`);
     return this._add(new PaymentIntent(this.client, data));
+  }
+
+  /**
+   * Every status change an intent went through, oldest first — who moved it
+   * (`api`, `validate`, `observer`, `system`), when, and with which transaction.
+   */
+  public transitions(id: string): Promise<PaymentIntentTransitionData[]> {
+    return this.rest.get<PaymentIntentTransitionData[]>(`${this.route}/${id}/transitions`);
   }
 
   /** List the consumer's payment intents (paginated). */

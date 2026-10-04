@@ -44,3 +44,25 @@ jobs:
 
       - name: Test
         run: npm test
+
+  # The SDK's copy of the server contract (openapi/openapi.json) must be the one the server
+  # publishes on the matching branch. Its own job, so a server change shows up as ONE red
+  # check that says "run npm run openapi:sync" instead of failing every Node version.
+  openapi:
+    name: openapi contract is current
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.x
+
+      - name: Compare with the community server's spec
+        env:
+          # main tracks main; everything else tracks dev, where the server's changes land.
+          SERVER_BRANCH: ${{ (github.base_ref || github.ref_name) == 'main' && 'main' || 'dev' }}
+        run: |
+          OPENAPI_SRC="https://raw.githubusercontent.com/CosmosPay/CosmosPay-Community-Server/${SERVER_BRANCH}/openapi/openapi.json" node scripts/sync-openapi.mjs --check
