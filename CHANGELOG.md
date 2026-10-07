@@ -2,7 +2,7 @@
 
 All notable changes to @cosmosapp/pay_sdk are documented here.
 Generated from [Conventional Commits](https://www.conventionalcommits.org) by [git-cliff](https://git-cliff.org).
-## [2.1.0] - 2026-10-04
+## [2.1.0] - 2026-10-07
 
 ### Features
 - Add AliasManager and AssetManager for handling aliases and asset registry (74e88b1)
@@ -10,6 +10,9 @@ Generated from [Conventional Commits](https://www.conventionalcommits.org) by [g
 ### Miscellaneous
 - Sync the server spec and list SEP-30 share routes as unsupported (1b9f5aa)
 - Bump @types/node in the minor-and-patch group (e67fafa)
+
+### Documentation
+- Add working agreement and command reference to CLAUDE.md (e391932)
 
 ### Dependencies
 - Bump @types/node to 26.6.3 and patch brace-expansion (bc02ca2)
