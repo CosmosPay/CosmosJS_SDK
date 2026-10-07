@@ -25,6 +25,7 @@
     "POST /v1/sep30/accounts/{address}/sign/{signer}": "SEP-30 account recovery — see GET /v1/sep30/accounts.",
     "PUT /v1/sep30/shares/{address}": "A recovery server's half of a wallet backup's recovery key, beside SEP-30 and authenticated the same way (a SEP-10 or identity token from that server, not an API key) — a wallet-side concern, not this API.",
     "GET /v1/sep30/shares/{address}": "Recovery-key share on a recovery server — see PUT /v1/sep30/shares/{address}.",
-    "DELETE /v1/sep30/shares/{address}": "Recovery-key share on a recovery server — see PUT /v1/sep30/shares/{address}."
+    "DELETE /v1/sep30/shares/{address}": "Recovery-key share on a recovery server — see PUT /v1/sep30/shares/{address}.",
+    "GET /v1/sep30/shares": "Every recovery-key share a proven inbox holds on a recovery server — see PUT /v1/sep30/shares/{address}."
   }
 }
