@@ -7,6 +7,9 @@ Generated from [Conventional Commits](https://www.conventionalcommits.org) by [g
 ### Features
 - Add AliasManager and AssetManager for handling aliases and asset registry (74e88b1)
 
+### Bug Fixes
+- Sync the server spec and list GET /v1/sep30/shares as unsupported (1319d09)
+
 ### Miscellaneous
 - Sync the server spec and list SEP-30 share routes as unsupported (1b9f5aa)
 - Bump @types/node in the minor-and-patch group (e67fafa)
