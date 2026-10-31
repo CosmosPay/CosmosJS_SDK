@@ -16,6 +16,10 @@ permissions:
   contents: read
 
 jobs:
+  # The package supports Node >= 18, but the build tools do not: tsup 9 (and its cac/chokidar)
+  # only RUN on Node >= 20.19. So every job installs, typechecks and builds on Node 22, then
+  # switches to the matrix version and runs the suite against that build. The matrix tests
+  # what consumers run (dist/ on Node 18, 20 and 22), not which Node can run the bundler.
   test:
     name: test (node ${{ matrix.node }})
     runs-on: ubuntu-latest
@@ -27,10 +31,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup Node ${{ matrix.node }}
+      - name: Setup Node 22 (build tools)
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ matrix.node }}
+          node-version: 22.x
           cache: npm
 
       - name: Install dependencies
@@ -42,8 +46,17 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Setup Node ${{ matrix.node }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node }}
+
+      # --ignore-scripts skips `pretest` (a rebuild, which Node 18 cannot run); the suite
+      # itself still runs, against the dist/ built above.
       - name: Test
-        run: npm test
+        run: |
+          node --version
+          npm test --ignore-scripts
 
   # The SDK's copy of the server contract (openapi/openapi.json) must be the one the server
   # publishes on the matching branch. Its own job, so a server change shows up as ONE red
