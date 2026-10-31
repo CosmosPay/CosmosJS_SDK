@@ -92,6 +92,10 @@ typechecks, tests, builds, runs `npm audit --omit=dev --audit-level=low`, regene
   the changelog, so a commit without a Conventional prefix ships but is never mentioned.
 - `CHANGELOG.md` is generated; do not hand-edit it.
 
-CI (`.github/workflows/ci.yml`) runs typecheck, build and test on Node 18, 20 and 22 — the
-package declares `node >=18`, so no Node 20+ only API (e.g. `import.meta.dirname`) in `src/`
-or `test/`.
+CI (`.github/workflows/ci.yml`) runs the tests on Node 18, 20 and 22 — the package declares
+`node >=18`, so no Node 20+ only API (e.g. `import.meta.dirname`) in `src/` or `test/`. The
+build tools are a different matter: tsup 9 only runs on Node >= 20.19, so each CI job installs,
+typechecks and builds on Node 22 and then runs `npm test --ignore-scripts` (no `pretest`
+rebuild) on the matrix version. Do not "fix" a Node 18 build failure by pinning tsup back or
+by raising `engines`: what must work on 18 is `dist/`, not the bundler. The release job builds
+on Node 20.x for the same reason.
