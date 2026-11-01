@@ -26,6 +26,39 @@ test('createPay POSTs to /payment-intents/pay with the options body', async () =
   assert.deepEqual(call.body, { destination: 'G...DEST', amount: '12.5', msg: 'Coffee' });
 });
 
+test('createPay sends `chain` for Solana and Monad links, and the intent names its chain', async () => {
+  const { client, fetch } = makeClient(() =>
+    fakeIntent({ kind: 'PAY', chain: 'solana', destination: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU', asset: 'native' }),
+  );
+
+  const intent = await client.paymentIntents.createPay({
+    chain: 'solana',
+    destination: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU',
+    amount: '0.5',
+  });
+
+  assert.deepEqual(fetch.calls[0].body, { chain: 'solana', destination: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU', amount: '0.5' });
+  assert.equal(intent.chain, 'solana');
+  assert.equal(intent.assetLabel, 'SOL');
+  assert.equal(intent.toJSON().chain, 'solana');
+});
+
+test('an intent from a server that omits `chain` is a Stellar one', async () => {
+  const { client } = makeClient(() => {
+    const { chain, ...older } = fakeIntent();
+    return older;
+  });
+  const intent = await client.paymentIntents.fetch('pi_test_123');
+  assert.equal(intent.chain, 'stellar');
+  assert.equal(intent.assetLabel, 'XLM');
+});
+
+test('a Monad intent labels its native coin MON', async () => {
+  const { client } = makeClient(() => fakeIntent({ chain: 'monad', asset: 'native' }));
+  const intent = await client.paymentIntents.fetch('pi_test_123');
+  assert.equal(intent.assetLabel, 'MON');
+});
+
 test('createTx POSTs to /payment-intents/tx', async () => {
   const { client, fetch } = makeClient(() =>
     fakeIntent({ kind: 'TX', source: 'G...SRC', xdr: 'AAAA' }),
@@ -65,6 +98,16 @@ test('list maps items and returns pagination metadata + query params', async () 
   assert.ok(page.items[0] instanceof PaymentIntent);
   assert.match(fetch.calls[0].url, /status=SUCCEEDED/);
   assert.match(fetch.calls[0].url, /take=50/);
+});
+
+test('list filters by chain and creation date (a Date becomes ISO 8601)', async () => {
+  const { client, fetch } = makeClient(() => ({ data: [], total: 0, take: 20, skip: 0 }));
+  await client.paymentIntents.list({ chain: 'monad', createdFrom: new Date('2026-11-01T00:00:00.000Z') });
+  await client.paymentIntents.list({ createdFrom: '2026-10-01T00:00:00Z' });
+  assert.match(fetch.calls[0].url, /chain=monad/);
+  assert.match(fetch.calls[0].url, /createdFrom=2026-11-01T00%3A00%3A00.000Z/);
+  assert.match(fetch.calls[1].url, /createdFrom=2026-10-01T00%3A00%3A00Z/);
+  assert.doesNotMatch(fetch.calls[1].url, /chain=/);
 });
 
 test('validate POSTs the txHash and materializes the refreshed intent', async () => {

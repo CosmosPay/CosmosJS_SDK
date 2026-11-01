@@ -82,6 +82,7 @@ export function fakeIntent(overrides = {}) {
     id: 'pi_test_123',
     kind: 'PAY',
     status: 'PENDING',
+    chain: 'stellar',
     network: 'testnet',
     source: null,
     destination: 'GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO',
