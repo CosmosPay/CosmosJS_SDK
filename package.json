@@ -1,6 +1,6 @@
 {
   "name": "@cosmosapp/pay_sdk",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Official SDK for Cosmos Pay, the stablecoin payments API for Stellar, Solana and Monad: payment intents and checkout, webhooks, swaps (same-chain and cross-chain), fiat ramps, products and customers. Payment links on all three (SEP-7, Solana Pay, EIP-681). Includes a browser client for Stellar wallets.",
   "keywords": [
     "cosmos-pay",

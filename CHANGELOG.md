@@ -2,6 +2,11 @@
 
 All notable changes to @cosmosapp/pay_sdk are documented here.
 Generated from [Conventional Commits](https://www.conventionalcommits.org) by [git-cliff](https://git-cliff.org).
+## [2.2.1] - 2026-11-01
+
+### Bug Fixes
+- Describe payment links on all three chains (c6430ba)
+
 ## [2.2.0] - 2026-11-01
 
 ### Features
