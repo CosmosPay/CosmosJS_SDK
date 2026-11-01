@@ -2,6 +2,20 @@
 
 All notable changes to @cosmosapp/pay_sdk are documented here.
 Generated from [Conventional Commits](https://www.conventionalcommits.org) by [git-cliff](https://git-cliff.org).
+## [2.2.0] - 2026-11-01
+
+### Features
+- Create and list payment links on Solana and Monad (70b27d1)
+
+### Miscellaneous
+- Bump @types/node (a9600b5)
+
+### Documentation
+- Describe the SDK as the Cosmos Pay payments SDK in npm metadata (bf06bdd)
+
+### Dependencies
+- Bump tsup to 9 and build on Node 22 in CI (216e5ca)
+
 ## [2.1.0] - 2026-10-07
 
 ### Features
