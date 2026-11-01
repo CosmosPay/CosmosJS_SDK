@@ -2,9 +2,9 @@
 
 # 🪐 @cosmosapp/pay_sdk
 
-**The object-oriented JavaScript / TypeScript SDK for the [Cosmos Pay](#) Payments API**
+**The official JavaScript / TypeScript SDK for [Cosmos Pay](https://cosmospay.lat), the stablecoin payments API for Stellar, Solana and Monad**
 
-Stellar **SEP-7 payment intents** · **webhooks** · **products** · **customers** · **analytics**
+**Payment intents** · **webhooks** · **swaps** · **fiat ramps** · **products** · **customers** · **analytics**
 
 [![CI](https://github.com/CosmosPay/CosmosJS_SDK/actions/workflows/ci.yml/badge.svg)](https://github.com/CosmosPay/CosmosJS_SDK/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/@cosmosapp/pay_sdk?style=flat-square&color=7c3aed)](https://www.npmjs.com/package/@cosmosapp/pay_sdk)
@@ -16,6 +16,8 @@ Stellar **SEP-7 payment intents** · **webhooks** · **products** · **customers
 </div>
 
 ---
+
+Cosmos Pay is a stablecoin payments API (hosted checkout, payment links, swaps and a non-custodial wallet) that settles on Stellar, Solana and Monad. This SDK covers it as follows: payment intents are created as Stellar SEP-7 intents (Solana Pay and EIP-681 intents on Solana and Monad go through the [REST API](https://dev.cosmospay.lat/docs/api/payment-intents) with `chain`); same-chain swaps run on Stellar, Solana and Monad; cross-chain swaps connect all three; and webhooks, ramps, products, customers and analytics are chain-independent. Docs: <https://dev.cosmospay.lat/docs/sdk/server/overview>.
 
 Designed to be **atomic**: one `Client`, every resource split into its own manager, and rich
 structure classes that can act on themselves.
