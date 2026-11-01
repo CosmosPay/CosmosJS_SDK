@@ -2,6 +2,7 @@ import type { Client } from '@/client/Client';
 import {
   PaymentIntentKind,
   PaymentIntentStatus,
+  type PaymentChain,
   type PaymentIntentData,
   type UpdatePaymentIntentOptions,
 } from '@/types/index';
@@ -17,12 +18,14 @@ import { Base } from '@/structures/Base';
 export class PaymentIntent extends Base<PaymentIntentData> {
   public kind!: PaymentIntentKind;
   public status!: PaymentIntentStatus;
+  /** Chain the payment settles on. */
+  public chain!: PaymentChain;
   public network!: string;
   /** Payer account (null for PAY intents). */
   public source!: string | null;
   public destination!: string;
   public amount!: string | null;
-  /** Asset code, or `native` for XLM. */
+  /** Asset code, or `native` for the chain's coin (XLM, SOL or MON). */
   public asset!: string;
   public assetIssuer!: string | null;
   /** Mandatory MEMO_ID. */
@@ -48,6 +51,7 @@ export class PaymentIntent extends Base<PaymentIntentData> {
     super._patch(data);
     this.kind = data.kind;
     this.status = data.status;
+    this.chain = data.chain ?? 'stellar';
     this.network = data.network;
     this.source = data.source;
     this.destination = data.destination;
@@ -87,9 +91,10 @@ export class PaymentIntent extends Base<PaymentIntentData> {
     return this.status === PaymentIntentStatus.Pending;
   }
 
-  /** Human-readable asset label (`XLM` for native). */
+  /** Human-readable asset label (the chain's coin for native: `XLM`, `SOL` or `MON`). */
   public get assetLabel(): string {
-    return !this.asset || this.asset === 'native' ? 'XLM' : this.asset;
+    if (this.asset && this.asset !== 'native') return this.asset;
+    return this.chain === 'solana' ? 'SOL' : this.chain === 'monad' ? 'MON' : 'XLM';
   }
 
   /** Re-fetch this intent from the API, returning a fresh instance. */
@@ -126,6 +131,7 @@ export class PaymentIntent extends Base<PaymentIntentData> {
       id: this.id,
       kind: this.kind,
       status: this.status,
+      chain: this.chain,
       network: this.network,
       source: this.source,
       destination: this.destination,

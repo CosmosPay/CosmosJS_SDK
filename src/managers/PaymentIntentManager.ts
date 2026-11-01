@@ -52,7 +52,10 @@ export class PaymentIntentManager extends BaseManager<PaymentIntent> {
     return this._add(new PaymentIntent(this.client, data));
   }
 
-  /** Create a SEP-7 `pay` intent (no source → pay URI + QR, no XDR). */
+  /**
+   * Create a `pay` intent (no source → a payment link + QR, no XDR): SEP-7 on Stellar (the
+   * default), Solana Pay with `chain: 'solana'`, EIP-681 with `chain: 'monad'`.
+   */
   public async createPay(
     options: CreatePayPaymentIntentOptions,
   ): Promise<PaymentIntent> {
@@ -83,6 +86,8 @@ export class PaymentIntentManager extends BaseManager<PaymentIntent> {
     const data = await this.rest.get<PaymentIntentListData>(this.route, {
       query: {
         status: options.status,
+        chain: options.chain,
+        createdFrom: options.createdFrom instanceof Date ? options.createdFrom.toISOString() : options.createdFrom,
         take: options.take,
         skip: options.skip,
       },

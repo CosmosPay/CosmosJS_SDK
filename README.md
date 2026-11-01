@@ -17,7 +17,7 @@
 
 ---
 
-Cosmos Pay is a stablecoin payments API (hosted checkout, payment links, swaps and a non-custodial wallet) that settles on Stellar, Solana and Monad. This SDK covers it as follows: payment intents are created as Stellar SEP-7 intents (Solana Pay and EIP-681 intents on Solana and Monad go through the [REST API](https://dev.cosmospay.lat/docs/api/payment-intents) with `chain`); same-chain swaps run on Stellar, Solana and Monad; cross-chain swaps connect all three; and webhooks, ramps, products, customers and analytics are chain-independent. Docs: <https://dev.cosmospay.lat/docs/sdk/server/overview>.
+Cosmos Pay is a stablecoin payments API (hosted checkout, payment links, swaps and a non-custodial wallet) that settles on Stellar, Solana and Monad. This SDK covers it as follows: payment links (`pay` intents) are created on all three with `chain` (SEP-7 on Stellar, Solana Pay on Solana, EIP-681 on Monad), and `tx` intents (an unsigned XDR for a known payer) are Stellar's; same-chain swaps run on Stellar, Solana and Monad; cross-chain swaps connect all three; and webhooks, ramps, products, customers and analytics are chain-independent. Docs: <https://dev.cosmospay.lat/docs/sdk/server/overview>.
 
 Designed to be **atomic**: one `Client`, every resource split into its own manager, and rich
 structure classes that can act on themselves.
@@ -167,6 +167,14 @@ const pay = await client.paymentIntents.createPay({
 
 console.log(pay.uri); // web+stellar:pay?destination=...
 console.log(pay.qr);  // data:image/png;base64,...
+
+// The same on Solana (a Solana Pay link) or Monad (an EIP-681 link): name the chain
+const sol = await client.paymentIntents.createPay({
+  chain: 'solana',
+  destination: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU',
+  amount: '25',
+});
+console.log(sol.chain, sol.uri); // solana solana:7xKX...
 
 // Later, validate a submitted transaction against the intent
 const outcome = await pay.validate('3389e9f0d6b3e3f1c2a1...');

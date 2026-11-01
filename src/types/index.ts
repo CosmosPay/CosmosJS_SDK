@@ -148,8 +148,20 @@ export interface CreateTxPaymentIntentOptions {
 }
 
 /** Body for `POST /v1/payment-intents/pay`. */
+/** The chain a payment intent settles on. */
+export type PaymentChain = 'stellar' | 'solana' | 'monad';
+
 export interface CreatePayPaymentIntentOptions {
-  /** Payee's Stellar account. A registered address-book name also works. */
+  /**
+   * Chain the payment settles on: `stellar` (the default, a SEP-7 `web+stellar:pay` link),
+   * `solana` (a Solana Pay link) or `monad` (an EIP-681 link). The network (mainnet or test)
+   * is the API key's, as on every route.
+   */
+  chain?: PaymentChain;
+  /**
+   * Payee's account on that chain: a Stellar `G...` account, a Solana address or a Monad
+   * `0x...` address. A registered address-book name also works.
+   */
   destination: string;
   /** Amount the destination should receive. Omit to let the user enter it (e.g. donations). */
   amount?: string;
@@ -158,15 +170,15 @@ export interface CreatePayPaymentIntentOptions {
    * and `assetIssuer` for you. Takes a back seat to explicit code/issuer below.
    */
   asset?: AssetRef;
-  /** Asset code the destination receives. Omit for native lumens (XLM). */
+  /** Asset code the destination receives. Omit for the chain's coin (XLM, SOL or MON). */
   assetCode?: string;
-  /** Issuer account for a non-native asset. */
+  /** Who issues a token: the Stellar issuer account, the Solana SPL mint or the Monad ERC-20 contract. */
   assetIssuer?: string;
   /** MEMO_ID (numeric uint64) for idempotency + on-chain identification. Auto-generated when omitted. */
   memo?: string;
-  /** SEP-7 `msg`: shown to the user in their wallet (≤ 300 chars). */
+  /** Shown to the user in their wallet (≤ 300 chars): SEP-7 `msg` on Stellar, the Solana Pay `message`. */
   msg?: string;
-  /** SEP-7 `callback`, e.g. `url:https://...`. */
+  /** SEP-7 `callback`, e.g. `url:https://...`. Stellar only. */
   callback?: string;
 }
 
@@ -182,6 +194,10 @@ export interface UpdatePaymentIntentOptions {
 /** Query for `GET /v1/payment-intents`. */
 export interface ListPaymentIntentsOptions {
   status?: PaymentIntentStatus;
+  /** Only intents on this chain. Omit for every chain. */
+  chain?: PaymentChain;
+  /** Only intents created at or after this instant (a Date or an ISO 8601 string). */
+  createdFrom?: Date | string;
   /** Page size (max 100, default 20). */
   take?: number;
   /** Offset (default 0). */
@@ -193,6 +209,8 @@ export interface PaymentIntentData {
   id: string;
   kind: PaymentIntentKind;
   status: PaymentIntentStatus;
+  /** Chain the payment settles on (TX intents are always Stellar). Older servers omit it: Stellar. */
+  chain?: PaymentChain;
   network: string;
   source: string | null;
   destination: string;
