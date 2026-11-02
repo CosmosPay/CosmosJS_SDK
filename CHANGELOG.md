@@ -2,6 +2,11 @@
 
 All notable changes to @cosmosapp/pay_sdk are documented here.
 Generated from [Conventional Commits](https://www.conventionalcommits.org) by [git-cliff](https://git-cliff.org).
+## [2.3.2] - 2026-11-02
+
+### Bug Fixes
+- Call the wallet "Cosmos Pay Wallet" where users see it (9f9f678)
+
 ## [2.3.1] - 2026-11-02
 
 ### Bug Fixes
