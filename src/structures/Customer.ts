@@ -13,12 +13,14 @@ export class Customer extends Base<CustomerData> {
   public reference!: string | null;
   public createdAt!: Date;
   public updatedAt!: Date;
+  // No initializers on the three below: a field initializer runs after `super()`,
+  // that is after `_patch`, and would reset what the list response carried.
   /** Number of payment intents from this customer's account (list view only). */
-  public payments: number | null = null;
+  public payments!: number | null;
   /** Number of succeeded payments (list view only). */
-  public succeeded: number | null = null;
+  public succeeded!: number | null;
   /** Total settled amount as a decimal string (list view only). */
-  public total: string | null = null;
+  public total!: string | null;
 
   constructor(client: Client, data: CustomerData) {
     super(client, data);
@@ -34,9 +36,10 @@ export class Customer extends Base<CustomerData> {
     this.reference = data.reference;
     this.createdAt = new Date(data.createdAt);
     this.updatedAt = new Date(data.updatedAt);
-    if (data.payments !== undefined) this.payments = data.payments;
-    if (data.succeeded !== undefined) this.succeeded = data.succeeded;
-    if (data.total !== undefined) this.total = data.total;
+    // A response without stats (fetch, update) keeps the ones already read.
+    this.payments = data.payments ?? this.payments ?? null;
+    this.succeeded = data.succeeded ?? this.succeeded ?? null;
+    this.total = data.total ?? this.total ?? null;
     return this;
   }
 

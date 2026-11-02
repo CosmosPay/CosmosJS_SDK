@@ -62,6 +62,38 @@ test('a customer has no consumerId, because the API no longer sends one', () => 
   assert.deepEqual(customer.toJSON(), raw);
 });
 
+test('a customer keeps the payment stats a list carries, and an edit does not drop them', async () => {
+  const raw = {
+    id: 'cus_1',
+    name: 'Ada',
+    alias: null,
+    note: null,
+    email: 'a@b.com',
+    account: null,
+    reference: null,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    payments: 3,
+    succeeded: 2,
+    total: '25.5',
+  };
+  const { payments, succeeded, total, ...plain } = raw;
+  const fetch = mockFetch((url, init) =>
+    init.method === 'PATCH' ? { ...plain, note: 'VIP' } : { data: [raw], total: 1 },
+  );
+  const api = new Client({ apiKey: 'dv_test', baseURL: 'http://gw', fetch });
+
+  const [customer] = await api.customers.list();
+  assert.equal(customer.payments, 3);
+  assert.equal(customer.succeeded, 2);
+  assert.equal(customer.total, '25.5');
+  assert.deepEqual(customer.toJSON(), raw);
+
+  await customer.edit({ note: 'VIP' });
+  assert.equal(customer.note, 'VIP');
+  assert.equal(customer.payments, 3);
+});
+
 test('valueOf returns the id (used in primitive coercion)', () => {
   const intent = new PaymentIntent(client, fakeIntent({ id: 'pi_xyz' }));
   assert.equal(intent.valueOf(), 'pi_xyz');
