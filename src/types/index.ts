@@ -56,11 +56,13 @@ export const WebhookEventType = {
   SwapSubmitted: 'SWAP_SUBMITTED',
   SwapSucceeded: 'SWAP_SUCCEEDED',
   SwapFailed: 'SWAP_FAILED',
+  SwapExpired: 'SWAP_EXPIRED',
   // Liquidity pool operations.
   LiquidityCreated: 'LIQUIDITY_CREATED',
   LiquiditySubmitted: 'LIQUIDITY_SUBMITTED',
   LiquiditySucceeded: 'LIQUIDITY_SUCCEEDED',
   LiquidityFailed: 'LIQUIDITY_FAILED',
+  LiquidityExpired: 'LIQUIDITY_EXPIRED',
   // Cross-chain swaps (NEAR Intents).
   CrossChainSwapCreated: 'CROSS_CHAIN_SWAP_CREATED',
   CrossChainSwapUpdated: 'CROSS_CHAIN_SWAP_UPDATED',
@@ -68,6 +70,8 @@ export const WebhookEventType = {
   CrossChainSwapRefunded: 'CROSS_CHAIN_SWAP_REFUNDED',
   CrossChainSwapFailed: 'CROSS_CHAIN_SWAP_FAILED',
   CrossChainSwapExpired: 'CROSS_CHAIN_SWAP_EXPIRED',
+  // Private payments (client.privatePayments).
+  PrivatePaymentSucceeded: 'ZK_PAYMENT_SUCCEEDED',
 } as const;
 export type WebhookEventType =
   (typeof WebhookEventType)[keyof typeof WebhookEventType];
@@ -364,16 +368,22 @@ export interface WebhookEventDataMap {
   SWAP_SUBMITTED: SwapData | ChainSwapData;
   SWAP_SUCCEEDED: SwapData | ChainSwapData;
   SWAP_FAILED: SwapData | ChainSwapData;
+  /** A swap that expired before its transaction settled (it may still be rescued if it lands). */
+  SWAP_EXPIRED: SwapData | ChainSwapData;
   LIQUIDITY_CREATED: LiquidityOperationData;
   LIQUIDITY_SUBMITTED: LiquidityOperationData;
   LIQUIDITY_SUCCEEDED: LiquidityOperationData;
   LIQUIDITY_FAILED: LiquidityOperationData;
+  /** A liquidity operation that expired before its transaction settled (a late landing can still settle it). */
+  LIQUIDITY_EXPIRED: LiquidityOperationData;
   CROSS_CHAIN_SWAP_CREATED: CrossChainSwapData;
   CROSS_CHAIN_SWAP_UPDATED: CrossChainSwapData;
   CROSS_CHAIN_SWAP_SUCCEEDED: CrossChainSwapData;
   CROSS_CHAIN_SWAP_REFUNDED: CrossChainSwapData;
   CROSS_CHAIN_SWAP_FAILED: CrossChainSwapData;
   CROSS_CHAIN_SWAP_EXPIRED: CrossChainSwapData;
+  /** A private payment the network settled (client.privatePayments). */
+  ZK_PAYMENT_SUCCEEDED: PrivatePaymentData;
 }
 
 /** One webhook event of a known type, with `data` typed for it. */
