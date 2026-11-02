@@ -14,8 +14,10 @@ import { DefindexManager } from '@/managers/DefindexManager';
 import { PluginManager } from '@/managers/PluginManager';
 import { PublicKeyManager } from '@/managers/PublicKeyManager';
 import { PaymentIntentManager } from '@/managers/PaymentIntentManager';
+import { PrivatePaymentManager } from '@/managers/PrivatePaymentManager';
 import { ProductManager } from '@/managers/ProductManager';
 import { SwapManager } from '@/managers/SwapManager';
+import { Usdt0Manager } from '@/managers/Usdt0Manager';
 import { WebhookManager } from '@/managers/WebhookManager';
 import { REST, type FetchLike } from '@/rest/REST';
 import { version } from '@/util/Constants';
@@ -146,6 +148,10 @@ export class Client extends EventEmitter {
   public readonly swaps: SwapManager;
   /** Swaps between Stellar, Solana and Monad, settled by NEAR Intents. */
   public readonly crossChainSwaps: CrossChainSwapManager;
+  /** USDT0 from Stellar to EVM networks through LayerZero (mainnet only). */
+  public readonly usdt0: Usdt0Manager;
+  /** Private payments: amounts hidden on-chain (Stellar testnet only for now). */
+  public readonly privatePayments: PrivatePaymentManager;
   /** Liquidity pools: browse, positions, deposit / withdraw. */
   public readonly liquidity: LiquidityManager;
   /** Fiat -> stablecoin: quotes, payins, trustlines, virtual accounts. */
@@ -156,9 +162,9 @@ export class Client extends EventEmitter {
   public readonly activity: ActivityManager;
   /** KYC / KYB: receivers, their wallets and their bank accounts. */
   public readonly kyc: KycManager;
-  /** Customers. */
+  /** Customers and their wallets. */
   public readonly customers: CustomerManager;
-  /** Read-only analytics (summary, balances, logs). */
+  /** Read-only analytics (summary, series, balances, logs). */
   public readonly analytics: AnalyticsManager;
   /** Service health probes (public). */
   public readonly health: HealthManager;
@@ -213,6 +219,8 @@ export class Client extends EventEmitter {
     this.products = new ProductManager(this);
     this.swaps = new SwapManager(this);
     this.crossChainSwaps = new CrossChainSwapManager(this);
+    this.usdt0 = new Usdt0Manager(this);
+    this.privatePayments = new PrivatePaymentManager(this);
     this.liquidity = new LiquidityManager(this);
     this.onramp = new OnrampManager(this);
     this.offramp = new OfframpManager(this);

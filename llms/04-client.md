@@ -12,8 +12,10 @@ One client exposes every resource through its own manager.
 | `client.paymentIntents` | Stellar SEP-7 intents | `createTx` · `createPay` · `fetch` · `list` · `update` · `delete` · `validate` |
 | `client.webhooks` | Endpoints + deliveries + event listener | `create` · `list` · `fetch` · `update` · `delete` · `rotateSecret` · `ping` · `fetchDeliveries` · `redeliver` · `on(...)` · `process` · `createHandler` · `middleware` |
 | `client.products` | Products / prices | `create` · `list` · `fetch` · `update` · `delete` |
-| `client.customers` | Customers | `create` · `list` · `fetch` · `update` · `delete` |
-| `client.analytics` | Read-only metrics | `summary` · `balances` · `apiLogs` · `webhookLogs` |
+| `client.customers` | Customers and their wallets | `create` · `list` · `fetch` · `update` · `delete` · `addWallet` · `removeWallet` |
+| `client.privatePayments` | Private payments (amounts hidden on-chain; Stellar Testnet for now) | `create` · `list` · `fetch` · `config` |
+| `client.usdt0` | USDT0 from Stellar to EVM networks (LayerZero, mainnet only) | `routes` · `quote` · `create` · `list` · `fetch` · `submit` |
+| `client.analytics` | Read-only metrics | `summary` · `series` · `balances` · `apiLogs` · `webhookLogs` |
 | `client.health` | Liveness / readiness | `liveness` · `readiness` |
 
 ## Constructor options
@@ -48,7 +50,7 @@ client.setGatewayCredentials(secret, consumerUsername); // local-dev direct acce
 
 ## Returned objects are "structures"
 
-Manager methods return rich instances (`PaymentIntent`, `WebhookEndpoint`,
+Manager methods return rich instances (`PaymentIntent`, `PrivatePayment`, `Usdt0Transfer`, `WebhookEndpoint`,
 `Product`, `Customer`) that can act on themselves and expose typed accessors —
 e.g. `intent.isPay`, `intent.assetLabel`, `await intent.validate(txHash)`,
 `await endpoint.disable()`. Call `.toJSON()` for the raw payload.

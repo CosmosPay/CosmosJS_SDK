@@ -25,8 +25,8 @@ The files below are atomic and self-contained — read the ones relevant to the 
 - [Payment intents](./05-payment-intents.md): createPay/createTx, fetch/list, edit/cancel/delete, validate
 - [Web client](./06-web-client.md): browser wallets, pay() options, custom adapters, DI, direct API
 - [Webhooks](./07-webhooks.md): register endpoints, receive events (http/Express), verify signatures
-- [Products & customers](./08-products-customers.md): catalog CRUD + payment stats
-- [Analytics & health](./09-analytics-health.md): summary, balances, logs, liveness/readiness
+- [Products & customers](./08-products-customers.md): catalog CRUD, customer wallets + payment stats
+- [Analytics & health](./09-analytics-health.md): summary, activity series, balances, logs, liveness/readiness
 - [Assets, wallets & addresses](./10-assets-wallets-addresses.md): typed catalogs + validators
 - [Errors & observability](./11-errors-observability.md): error classes, retries, telemetry events
 - [Configuration](./12-configuration.md): full option reference + self-hosting
@@ -36,6 +36,8 @@ The files below are atomic and self-contained — read the ones relevant to the 
 
 - [Recipes](./14-recipes.md): checkout, donations, idempotent webhooks, reconciliation, testnet/mainnet
 - [Swaps](./15-swaps.md): same-chain swaps (Stellar DEX, Jupiter on Solana, Kuru Flow on Monad) and cross-chain swaps (NEAR Intents)
+- [Private payments](./16-private-payments.md): payments whose amount is hidden on-chain (Stellar Testnet for now, 0.18% commission)
+- [USDT0](./17-usdt0.md): send USDT0 from Stellar to EVM networks through LayerZero (mainnet only)
 
 ## Optional
 

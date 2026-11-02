@@ -9,9 +9,10 @@ ships alongside it purely as reference material.
 
 - **[`llms.txt`](./llms.txt)** — a concise, link-first index following the
   [llmstxt.org](https://llmstxt.org) convention. Point your AI tool at this first.
-- **`00…14-*.md`** — atomic, self-contained topic files (overview, installation,
+- **`00…17-*.md`**: atomic, self-contained topic files (overview, installation,
   payment intents, web client, webhooks, products/customers, analytics, assets,
-  errors, configuration, types, recipes). Read only the ones a task needs.
+  errors, configuration, types, recipes, swaps, private payments, USDT0). Read
+  only the ones a task needs.
 - **[`llms-full.txt`](./llms-full.txt)** — every topic file concatenated into one
   document, for tools that prefer a single-file ingest. Generated from the `.md`
   files (do not edit by hand).
