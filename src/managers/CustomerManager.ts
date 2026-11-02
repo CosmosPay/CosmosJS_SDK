@@ -1,3 +1,4 @@
+import { pathSegment } from '@/util/path';
 import { Customer } from '@/structures/Customer';
 import type {
   AddCustomerWalletOptions,
@@ -69,11 +70,11 @@ export class CustomerManager extends BaseManager<Customer> {
    * customer already holds answers as it is; one another of your customers holds
    * is `409 customer_wallet_taken`.
    */
-  public addWallet(
+  public async addWallet(
     customerId: string,
     options: AddCustomerWalletOptions,
   ): Promise<CustomerWalletData> {
-    return this.rest.post<CustomerWalletData>(`${this.route}/${customerId}/wallets`, {
+    return this.rest.post<CustomerWalletData>(`${this.route}/${pathSegment(customerId)}/wallets`, {
       body: options,
     });
   }
@@ -83,12 +84,12 @@ export class CustomerManager extends BaseManager<Customer> {
    * toward it, and a later settled payment from it adds it as a new automatic
    * customer. A `walletId` that is not one of this customer's wallets is 404.
    */
-  public removeWallet(
+  public async removeWallet(
     customerId: string,
     walletId: string,
   ): Promise<CustomerWalletDeletedData> {
     return this.rest.delete<CustomerWalletDeletedData>(
-      `${this.route}/${customerId}/wallets/${walletId}`,
+      `${this.route}/${pathSegment(customerId)}/wallets/${pathSegment(walletId)}`,
     );
   }
 }

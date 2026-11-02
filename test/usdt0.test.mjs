@@ -274,3 +274,16 @@ test('toJSON round-trips the raw payload', () => {
   });
   assert.deepEqual(new Usdt0Transfer(client, raw).toJSON(), raw);
 });
+
+test('ids are one path segment: encoded, and "." or ".." refused before any request', async () => {
+  const { client, fetch } = makeClient(() => ({}));
+  for (const bad of ['..', '.']) {
+    await assert.rejects(client.usdt0.fetch(bad), TypeError);
+    await assert.rejects(client.usdt0.submit(bad, { signedXdr: 'AAAA' }), TypeError);
+    await assert.rejects(client.privatePayments.fetch(bad), TypeError);
+    await assert.rejects(client.customers.removeWallet('cus_1', bad), TypeError);
+  }
+  assert.equal(fetch.calls.length, 0);
+  await client.usdt0.fetch('a/b?c').catch(() => {});
+  assert.match(fetch.calls[0].url, /\/v1\/usdt0\/transfers\/a%2Fb%3Fc$/);
+});

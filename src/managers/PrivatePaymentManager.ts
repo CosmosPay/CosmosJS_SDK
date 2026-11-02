@@ -1,3 +1,4 @@
+import { pathSegment } from '@/util/path';
 import { PrivatePayment } from '@/structures/PrivatePayment';
 import type {
   CreatePrivatePaymentOptions,
@@ -66,7 +67,7 @@ export class PrivatePaymentManager extends BaseManager<PrivatePayment> {
 
   /** Get one of your private payments, with the transfers that settled it. */
   public async fetch(id: string): Promise<PrivatePayment> {
-    const data = await this.rest.get<PrivatePaymentData>(`${this.route}/${id}`);
+    const data = await this.rest.get<PrivatePaymentData>(`${this.route}/${pathSegment(id)}`);
     return this._add(new PrivatePayment(this.client, data));
   }
 

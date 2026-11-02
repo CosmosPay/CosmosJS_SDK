@@ -1,3 +1,4 @@
+import { pathSegment } from '@/util/path';
 import { Usdt0Transfer } from '@/structures/Usdt0Transfer';
 import type {
   CreateUsdt0TransferOptions,
@@ -103,7 +104,7 @@ export class Usdt0Manager extends BaseManager<Usdt0Transfer> {
    */
   public async fetch(id: string, options: Usdt0RecordTokenOptions = {}): Promise<Usdt0Transfer> {
     const data = await this.rest.get<Usdt0TransferData>(
-      `${this.route}/transfers/${id}`,
+      `${this.route}/transfers/${pathSegment(id)}`,
       recordTokenHeader(options.recordToken),
     );
     return this._add(new Usdt0Transfer(this.client, data));
@@ -120,7 +121,7 @@ export class Usdt0Manager extends BaseManager<Usdt0Transfer> {
   ): Promise<Usdt0SubmitOutcome> {
     const { recordToken, ...body } = options;
     const data = await this.rest.post<Usdt0SubmitOutcomeData>(
-      `${this.route}/transfers/${id}/submit`,
+      `${this.route}/transfers/${pathSegment(id)}/submit`,
       { body, ...recordTokenHeader(recordToken) },
     );
     return {
