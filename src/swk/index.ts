@@ -1,8 +1,8 @@
 /**
- * `@cosmosapp/pay_sdk/swk` — Cosmos Wallet for Stellar Wallets Kit.
+ * `@cosmosapp/pay_sdk/swk` — Cosmos Pay Wallet for Stellar Wallets Kit.
  *
  * A separate entry point because it is a separate audience: a dapp that already
- * uses the kit imports this one file and gets a button for Cosmos Wallet, without
+ * uses the kit imports this one file and gets a button for Cosmos Pay Wallet, without
  * pulling in the payments client — and nothing here imports the kit itself, so the
  * cost of offering the wallet is zero for everyone who does not.
  *

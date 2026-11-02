@@ -1,5 +1,5 @@
 /**
- * Cosmos Wallet — https://github.com/CosmosPay/CosmosPay-Wallet
+ * Cosmos Pay Wallet — https://github.com/CosmosPay/CosmosPay-Wallet
  *
  * Cosmos Pay's own non-custodial Stellar wallet. It reaches the page two ways and
  * this adapter serves both: the browser extension injects `window.cosmosWallet`,
@@ -24,7 +24,7 @@ import {
 
 export class CosmosWalletAdapter implements WalletAdapter {
   public readonly id = 'cosmos';
-  public readonly name = 'Cosmos Wallet';
+  public readonly name = 'Cosmos Pay Wallet';
 
   private readonly options: CosmosProviderOptions;
 
@@ -55,7 +55,7 @@ export class CosmosWalletAdapter implements WalletAdapter {
 
   private async provider(): Promise<CosmosWalletProvider> {
     const provider = await resolveProvider(this.options);
-    if (!provider) throw new WalletError(this.id, 'Cosmos Wallet is not available.');
+    if (!provider) throw new WalletError(this.id, 'Cosmos Pay Wallet is not available.');
     return provider;
   }
 

@@ -34,7 +34,7 @@ export {
 } from '@/web/adapters/index';
 export type { InjectedWallets } from '@/web/adapters/index';
 
-// Cosmos Wallet transport (extension global, or the hosted build's provider script)
+// Cosmos Pay Wallet transport (extension global, or the hosted build's provider script)
 export {
   injectedProvider,
   loadHostedProvider,
