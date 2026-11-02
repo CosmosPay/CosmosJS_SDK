@@ -425,19 +425,71 @@ export interface ProductData {
 // Customers
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** The chains a customer's wallet can be on: the chains payments settle on. */
+export type CustomerWalletChain = 'stellar' | 'solana' | 'monad';
+
+/**
+ * Body for `POST /v1/customers/:id/wallets`, and one entry of
+ * {@link CreateCustomerOptions.wallets}: one wallet of a customer, the chain it
+ * is on and its address there.
+ */
+export interface AddCustomerWalletOptions {
+  /** The chain the wallet is on. */
+  chain: CustomerWalletChain;
+  /**
+   * The address on that chain: a Stellar account (G..., checksum verified), a
+   * Solana address (base58, 32 bytes) or a Monad address (0x + 40 hex, any case;
+   * stored EIP-55 checksummed). Payment intents whose payer (`source`) is this
+   * address count toward the customer.
+   */
+  address: string;
+  /** A name for the wallet, shown beside the address. */
+  label?: string;
+}
+
 /** Body for `POST /v1/customers`. */
 export interface CreateCustomerOptions {
   name: string;
   alias?: string;
   note?: string;
   email?: string;
-  /** Optional Stellar account to associate the customer with. */
+  /**
+   * The customer's wallets, on any chain payments settle on, up to 20. Payment
+   * intents paid from any of them count toward the customer. A wallet that
+   * another of your customers already holds answers `409 customer_wallet_taken`.
+   */
+  wallets?: AddCustomerWalletOptions[];
+  /**
+   * @deprecated Use `wallets`. One wallet, its chain read from its shape (a
+   * Stellar, Solana or Monad address); it is added to `wallets`.
+   */
   account?: string;
   reference?: string;
 }
 
-/** Body for `PATCH /v1/customers/:id`. */
-export type UpdateCustomerOptions = Partial<CreateCustomerOptions>;
+/** Body for `PATCH /v1/customers/:id`. Wallets change through their own routes. */
+export type UpdateCustomerOptions = Partial<Omit<CreateCustomerOptions, 'wallets'>>;
+
+/** A wallet of a customer, on one chain, as the API returns it. */
+export interface CustomerWalletData {
+  /** Wallet id, used to remove it from the customer. */
+  id: string;
+  chain: CustomerWalletChain;
+  /** The address, in its chain's stored spelling (EIP-55 on Monad). */
+  address: string;
+  /** A name for the wallet; null when none was given. */
+  label?: string | null;
+  /** When the wallet was added (ISO 8601). */
+  createdAt: string;
+}
+
+/** Confirmation that a wallet was removed from a customer. */
+export interface CustomerWalletDeletedData {
+  /** Id of the removed wallet. */
+  id: string;
+  /** Always true. */
+  deleted: boolean;
+}
 
 /**
  * Raw customer payload.
@@ -452,6 +504,9 @@ export interface CustomerData {
   alias: string | null;
   note: string | null;
   email: string | null;
+  /** The customer's wallets, oldest first, on any chain payments settle on. */
+  wallets: CustomerWalletData[];
+  /** @deprecated Read `wallets`. The first wallet's address; null without wallets. */
   account: string | null;
   reference: string | null;
   createdAt: string;
@@ -565,6 +620,212 @@ export interface WebhookLogRow {
 export interface WebhookLogsData {
   data: WebhookLogRow[];
   total: number;
+}
+
+/**
+ * How `GET /v1/summary/series` groups its buckets (UTC, weeks from Monday):
+ * `day` is 30 days, `week` 12 weeks, `month` 12 months and `year` 5 years.
+ */
+export type AnalyticsSeriesPeriod = 'day' | 'week' | 'month' | 'year';
+
+/** Query for `GET /v1/summary/series`. */
+export interface AnalyticsSeriesOptions {
+  /** The bucket size; the server's default is `day`. */
+  period?: AnalyticsSeriesPeriod;
+}
+
+/** Payment intents created in one bucket of the series. */
+export interface AnalyticsSeriesBucket {
+  /** The first day of the bucket (UTC; weeks start on Monday), e.g. `2026-10-01`. */
+  start: string;
+  /** Payments created in the bucket, any status. */
+  count: number;
+  /** Of those, the ones settled (status `SUCCEEDED`). */
+  succeeded: number;
+  /** Failed, cancelled or expired. */
+  failed: number;
+  /** Settled volume, every asset added, as a decimal string. */
+  volume: string;
+  /**
+   * Settled volume in USD with two decimals, at NEAR Intents' current reference
+   * price for each asset (indicative, today's price). Null only when the bucket
+   * has settled payments and those prices could not be read.
+   */
+  volumeUsd: string | null;
+}
+
+/** Payment intent totals for a whole window of the series. */
+export interface AnalyticsSeriesWindow {
+  /** Payment intents created in the window, any status. */
+  count: number;
+  succeeded: number;
+  /** Failed, cancelled or expired. */
+  failed: number;
+  /** Settled amount, every asset added, as a decimal string. */
+  volume: string;
+  /** Settled amount in USD (indicative); null when prices could not be read. */
+  volumeUsd: string | null;
+  /** Settled payments `volumeUsd` leaves out because their asset has no USD price. */
+  unpriced: number;
+}
+
+/** {@link AnalyticsSeriesWindow} for the window the buckets cover, plus its distinct payers. */
+export interface AnalyticsSeriesTotals extends AnalyticsSeriesWindow {
+  /** Distinct paying accounts in the window. */
+  payers: number;
+}
+
+/** Swaps or liquidity operations by outcome, for a bucket or a window. */
+export interface AnalyticsSeriesOutcomeCounts {
+  /** Created in the bucket or window, any status. */
+  count: number;
+  /** Of those, the ones that succeeded (for a USDT0 transfer, delivered). */
+  succeeded: number;
+  /** Given up on: failed or expired (and, for a cross-chain swap, refunded). */
+  failed: number;
+}
+
+/** Swaps of every kind created in one bucket, with the USD value of the completed ones. */
+export interface AnalyticsSeriesSwapBucket extends AnalyticsSeriesOutcomeCounts {
+  /** The first day of the bucket, the same as the payments bucket at that index. */
+  start: string;
+  /** What the completed swaps sold, in USD (indicative); null when no price could be read. */
+  volumeUsd: string | null;
+}
+
+/** A window's swaps split by kind, any status. */
+export interface AnalyticsSeriesSwapsByKind {
+  /** Stellar DEX swaps. */
+  dex: number;
+  /** Solana (Jupiter) and Monad (Kuru Flow) swaps. Mainnet only. */
+  chain: number;
+  /** Swaps between networks through NEAR Intents. Mainnet only. */
+  crossChain: number;
+  /** USDT0 sent from Stellar to an EVM network through LayerZero. Mainnet only. */
+  usdt0: number;
+}
+
+/** Swap totals for the window the buckets cover. */
+export interface AnalyticsSeriesSwapTotals extends AnalyticsSeriesOutcomeCounts {
+  /** Not final yet: unsigned, submitted, or a cross-chain swap awaiting or processing its deposit. */
+  inProgress: number;
+  byKind: AnalyticsSeriesSwapsByKind;
+  /** What the completed swaps sold, in USD (indicative); null when no price could be read. */
+  volumeUsd: string | null;
+  /** Completed swaps whose sold asset has no USD price, left out of `volumeUsd`. */
+  unpriced: number;
+}
+
+/** Swap totals for the window of the same length just before the current one. */
+export interface AnalyticsSeriesSwapPrevious extends AnalyticsSeriesOutcomeCounts {
+  volumeUsd: string | null;
+}
+
+/**
+ * Swaps of every kind (Stellar DEX, Solana and Monad, cross-chain, USDT0) on the
+ * key's network. A sandbox key counts no Solana, Monad, cross-chain swap or USDT0
+ * transfer, which run on mainnet only.
+ */
+export interface AnalyticsSeriesSwaps {
+  buckets: AnalyticsSeriesSwapBucket[];
+  totals: AnalyticsSeriesSwapTotals;
+  previous: AnalyticsSeriesSwapPrevious;
+}
+
+/** Liquidity pool deposits and withdrawals created in one bucket. */
+export interface AnalyticsSeriesLiquidityBucket extends AnalyticsSeriesOutcomeCounts {
+  start: string;
+}
+
+/** Liquidity pool operations on the key's network. */
+export interface AnalyticsSeriesLiquidity {
+  buckets: AnalyticsSeriesLiquidityBucket[];
+  totals: AnalyticsSeriesOutcomeCounts;
+  previous: AnalyticsSeriesOutcomeCounts;
+}
+
+/** Webhook deliveries created in one bucket. */
+export interface AnalyticsSeriesWebhookBucket {
+  start: string;
+  /** Deliveries created in the bucket, any status. */
+  deliveries: number;
+  /** Of those, the ones whose last attempt failed. */
+  failed: number;
+}
+
+/** Webhook deliveries created in a window. */
+export interface AnalyticsSeriesWebhookCounts {
+  deliveries: number;
+  failed: number;
+}
+
+/** Webhook deliveries to the consumer's endpoints (not scoped by network). */
+export interface AnalyticsSeriesWebhooks {
+  buckets: AnalyticsSeriesWebhookBucket[];
+  totals: AnalyticsSeriesWebhookCounts;
+  previous: AnalyticsSeriesWebhookCounts;
+}
+
+/** Private payments created in one bucket, amounts in XLM. */
+export interface AnalyticsSeriesPrivatePaymentBucket {
+  start: string;
+  /** Private payments created in the bucket, any status. */
+  count: number;
+  /** Settled: both transfers confirmed. */
+  succeeded: number;
+  /** Past their deadline without settling. */
+  expired: number;
+  /** Settled amount in XLM, what the payers paid (the commission included). */
+  volume: string;
+  /** Settled amount in USD (indicative); null when prices could not be read. */
+  volumeUsd: string | null;
+}
+
+/** Private payment totals for a window, amounts in XLM. */
+export interface AnalyticsSeriesPrivatePaymentWindow {
+  count: number;
+  succeeded: number;
+  expired: number;
+  /** Settled amount in XLM, the commission included. */
+  volume: string;
+  volumeUsd: string | null;
+  /** Commission the settled payments paid to Cosmos Pay, in XLM (0.18% of each). */
+  fees: string;
+  /** The commission in USD (indicative); null when prices could not be read. */
+  feesUsd: string | null;
+}
+
+/**
+ * Private payments on the key's network. They run on testnet only for now, so a
+ * production key counts none.
+ */
+export interface AnalyticsSeriesPrivatePayments {
+  buckets: AnalyticsSeriesPrivatePaymentBucket[];
+  totals: AnalyticsSeriesPrivatePaymentWindow;
+  previous: AnalyticsSeriesPrivatePaymentWindow;
+}
+
+/**
+ * Raw activity series returned by `GET /v1/summary/series`: payments, swaps,
+ * liquidity operations, webhook deliveries and private payments, each grouped
+ * into the UTC buckets of `period`, with the totals of the window and of the
+ * window before (for growth). Every `buckets` array is oldest first and
+ * pre-seeded, so a quiet bucket is a zero.
+ */
+export interface AnalyticsSeriesData {
+  /** How the buckets are grouped, as requested (`day` when omitted). */
+  period: AnalyticsSeriesPeriod;
+  /** Payment intents per bucket. */
+  buckets: AnalyticsSeriesBucket[];
+  /** Payment intent totals for the window the buckets cover. */
+  totals: AnalyticsSeriesTotals;
+  /** The window of the same length just before it. */
+  previous: AnalyticsSeriesWindow;
+  swaps: AnalyticsSeriesSwaps;
+  liquidity: AnalyticsSeriesLiquidity;
+  webhooks: AnalyticsSeriesWebhooks;
+  /** Private payments (the API names this field after its `/v1/zk-payments` route). */
+  zkPayments: AnalyticsSeriesPrivatePayments;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2076,4 +2337,472 @@ export interface DefindexWithdrawOptions {
   shares: string;
   caller: string;
   slippageBps?: number;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Merchant fees
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * A merchant fee to charge on an operation: a percentage, a fixed amount or
+ * both, paid on-chain to `wallet`. At least one of `bps` and `fixed` must be
+ * above zero.
+ */
+export interface MerchantFeeOptions {
+  /** The percentage part, in basis points (150 = 1.5%), at most 1000 (10%). Taken from `amount`, rounded down. */
+  bps?: number;
+  /** The fixed part, in the operation's asset, as a decimal with at most that asset's decimals. */
+  fixed?: string;
+  /** Where the fee is paid: an account on the chain the fee travels on. */
+  wallet: string;
+  /**
+   * `recipient` (the default): deducted from `amount`, so the receiver gets less.
+   * `payer`: added on top, so the payer sends `amount` plus the fee.
+   */
+  paidBy?: 'recipient' | 'payer';
+}
+
+/** The merchant fee an operation charged, as its record stores it. */
+export interface MerchantFeeData {
+  /** The percentage part, in basis points. */
+  bps: number;
+  /** The fixed part, in `asset`. */
+  fixed: string;
+  /** The fee charged: the percentage of `amount` plus the fixed part. */
+  amount: string;
+  /** The asset the fee is paid in. */
+  asset: string;
+  /** Where the fee is paid. */
+  wallet: string;
+  paidBy: 'recipient' | 'payer';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Private payments (`/v1/zk-payments`)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Where a private payment stands, as it reads now: a `PENDING` payment past
+ * `expiresAt` reads `EXPIRED`, and can still settle with transfers that closed
+ * in time.
+ */
+export const PrivatePaymentStatus = {
+  Pending: 'PENDING',
+  Succeeded: 'SUCCEEDED',
+  Expired: 'EXPIRED',
+} as const;
+export type PrivatePaymentStatus =
+  (typeof PrivatePaymentStatus)[keyof typeof PrivatePaymentStatus];
+
+/** The Stellar network a private payment is on, set by the API key. */
+export type PrivatePaymentNetwork = 'public' | 'testnet';
+
+/** Body for `POST /v1/zk-payments`. */
+export interface CreatePrivatePaymentOptions {
+  /**
+   * What the payer pays in total, in XLM (up to 7 decimal places). The merchant
+   * receives it minus the 0.18% commission (`netAmount`); the commission
+   * (`feeAmount`, rounded up, at least one stroop) goes to Cosmos Pay's fee
+   * account. An amount whose net would be zero is refused.
+   */
+  amount: string;
+  /**
+   * The merchant's Stellar account (G...). It must already hold a confidential
+   * account on Cosmos Pay's token, registered under auditor id 0; otherwise the
+   * payment is refused with `recipient_not_registered`.
+   */
+  recipient: string;
+  /**
+   * Shown to the payer by the checkout (max 280 characters). Not secret and not
+   * on-chain: the public read returns it to anyone holding the payment id.
+   */
+  description?: string;
+  /** How long the payment stays payable, in minutes (1 to 10080; the server's default is 60). */
+  expiresInMinutes?: number;
+  /**
+   * Idempotency key (max 255 characters), sent as the `Idempotency-Key` header
+   * and in the body. A retry with the same key and request returns the existing
+   * payment; the same key with a different request is `409 idempotency_conflict`.
+   */
+  idempotencyKey?: string;
+  /**
+   * Your own fee on this payment, in XLM, paid privately by a third confidential
+   * transfer to `wallet`, which must already hold a confidential account on the
+   * token (under auditor id 0) and be neither the recipient nor the fee account.
+   */
+  merchantFee?: MerchantFeeOptions;
+}
+
+/** Query for `GET /v1/zk-payments`. */
+export interface ListPrivatePaymentsOptions {
+  /** Only payments in this status, as it reads now. */
+  status?: PrivatePaymentStatus;
+  /** Page size (1 to 100, default 20). */
+  take?: number;
+  /** Offset (default 0). */
+  skip?: number;
+}
+
+/** Raw private payment, as its owner (the merchant's API key) reads it. */
+export interface PrivatePaymentData {
+  /** The private payment id (a cuid). */
+  id: string;
+  status: PrivatePaymentStatus;
+  network: PrivatePaymentNetwork;
+  /** The confidential token every transfer must be made on. */
+  tokenContract: string;
+  /** What the payer pays in total, in XLM: `netAmount + feeAmount`, plus `merchantFee.amount` when there is one. */
+  amount: string;
+  /** What the merchant receives: `amount - feeAmount`, less `merchantFee.amount` when there is one. */
+  netAmount: string;
+  /** The commission: `ceil(amount * feeBps / 10000)` in stroops, at least one. */
+  feeAmount: string;
+  /** The commission rate the payment was priced at, in basis points. */
+  feeBps: number;
+  /** The merchant (G...). */
+  recipient: string;
+  /** Cosmos Pay's account the commission (`feeAmount`) is paid to. */
+  feeAccount: string;
+  /** The account the transfers came from, once settled. */
+  payer: string | null;
+  /** The transaction of the transfer that paid `netAmount` to the recipient, once settled. */
+  paymentTxHash: string | null;
+  /** The transaction of the transfer that paid `feeAmount` to the fee account, once settled. */
+  feeTxHash: string | null;
+  /** The merchant fee the request named; null without one. */
+  merchantFee: MerchantFeeData | null;
+  /** The merchant fee's transaction, once settled. */
+  merchantFeeTxHash: string | null;
+  /** The description given at create; null when none was given. */
+  description: string | null;
+  /** The idempotency key of the create: the one sent, or a generated `zkp_...` key. */
+  idempotencyKey: string;
+  /** When the payment stops being payable. Every transfer must close before it. */
+  expiresAt: string;
+  /** When the later of the transfers closed, once settled. */
+  settledAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Raw paginated list of private payments, newest first. */
+export interface PrivatePaymentListData {
+  data: PrivatePaymentData[];
+  total: number;
+  take: number;
+  skip: number;
+}
+
+/** Cosmos Pay's confidential token on one network. */
+export interface PrivatePaymentTokenData {
+  /** The confidential token contract (C...). */
+  contractId: string;
+  /** What it wraps: native XLM. */
+  symbol: string;
+  /** Decimal places of the token's amounts (7, as for XLM). */
+  decimals: number;
+  /** Native XLM's Stellar Asset Contract on this network. */
+  underlying: string;
+  /** The ledger the token was deployed at: where a wallet replays its confidential balance from. */
+  deployedAtLedger: number;
+}
+
+/**
+ * Raw private payments setup of the API key's network (`GET /v1/zk-payments/config`):
+ * the token, registries, auditor id, commission and fee account a wallet
+ * registers, proves and pays against. Everything in it is public on-chain data
+ * or a public URL.
+ */
+export interface PrivatePaymentsConfigData {
+  /**
+   * Whether private payments run on this network. False where they do not run
+   * yet (mainnet today); every other field but `network`, `networkPassphrase`,
+   * `auditorId` and `feeBps` is then null.
+   */
+  enabled: boolean;
+  network: PrivatePaymentNetwork;
+  /** The Soroban RPC to build and submit transactions through. */
+  rpcUrl: string | null;
+  /** The Stellar network passphrase of `network`. */
+  networkPassphrase: string;
+  /** Cosmos Pay's confidential token on this network; null when `enabled` is false. */
+  token: PrivatePaymentTokenData | null;
+  /** The UltraHonk verifier registry the token checks proofs with. */
+  verifier: string | null;
+  /** The auditor registry holding Cosmos Pay's key. */
+  auditorRegistry: string | null;
+  /** The auditor id every account on the token registers under. */
+  auditorId: number;
+  /** The commission, in basis points (18 = 0.18%). */
+  feeBps: number;
+  /** Cosmos Pay's account the commission is transferred to. */
+  feeAccount: string | null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// USDT0 (Stellar to EVM networks through LayerZero)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Where a USDT0 transfer stands. DELIVERED, FAILED and EXPIRED are final. */
+export const Usdt0TransferStatus = {
+  /** Built, waiting for the signature. */
+  Pending: 'PENDING',
+  /** On the Stellar ledger; LayerZero is delivering it. */
+  Submitted: 'SUBMITTED',
+  /** Credited on the destination network. */
+  Delivered: 'DELIVERED',
+  /** The Stellar transaction failed, or LayerZero gave up on the message. */
+  Failed: 'FAILED',
+  /** Never reached the ledger before `expiresAt`. */
+  Expired: 'EXPIRED',
+} as const;
+export type Usdt0TransferStatus =
+  (typeof Usdt0TransferStatus)[keyof typeof Usdt0TransferStatus];
+
+/**
+ * A network USDT0 can be sent to from Stellar (`GET /v1/usdt0/routes`). `eth`
+ * receives native USDT; every other network receives USDT0.
+ */
+export type Usdt0Destination =
+  | 'eth'
+  | 'arb'
+  | 'bera'
+  | 'conflux'
+  | 'flare'
+  | 'hedera'
+  | 'hyperevm'
+  | 'ink'
+  | 'mantle'
+  | 'megaeth'
+  | 'monad'
+  | 'morph'
+  | 'op'
+  | 'plasma'
+  | 'pol'
+  | 'rootstock'
+  | 'sei'
+  | 'stable'
+  | 'tempo'
+  | 'unichain'
+  | 'xlayer';
+
+/** What arrives: native `USDT` on Ethereum, `USDT0` everywhere else. */
+export type Usdt0Receives = 'USDT' | 'USDT0';
+
+/** Body for `POST /v1/usdt0/quote`. Nothing is persisted. */
+export interface QuoteUsdt0Options {
+  /** The destination network. */
+  to: Usdt0Destination;
+  /**
+   * USDT0 to send, decimal with up to 7 places. The OFT carries 6: a 7th decimal
+   * is dust that stays in the account.
+   */
+  amount: string;
+  /** The account the quote is simulated as. Omitted, a fixed mainnet account is used; the price is the same. */
+  source?: string;
+}
+
+/** Body for `POST /v1/usdt0/transfers`. */
+export interface CreateUsdt0TransferOptions {
+  /** The Stellar account that holds the USDT0, signs the transaction and pays its fees in XLM. */
+  source: string;
+  /** The destination network. */
+  to: Usdt0Destination;
+  /** The EVM address credited on the destination network (0x + 40 hex; a mixed-case one must be valid EIP-55). */
+  recipient: string;
+  /** USDT0 to send, decimal with up to 7 places (a 7th decimal is dust that stays in the account). */
+  amount: string;
+  /**
+   * Idempotency key, sent as the `Idempotency-Key` header and in the body. A retry
+   * with the same key and request returns the stored transfer; the same key with a
+   * different request is `409 idempotency_conflict`.
+   */
+  idempotencyKey?: string;
+  /**
+   * Your own fee on this transfer, in USDT0, paid to `wallet` (a Stellar account
+   * that trusts USDT0) in the same transaction. Needs a deployment with the fee
+   * wrapper configured; otherwise `400 merchant_fee_unsupported`.
+   */
+  merchantFee?: MerchantFeeOptions;
+}
+
+/** Query for `GET /v1/usdt0/transfers`. */
+export interface ListUsdt0TransfersOptions {
+  /** Only transfers in this status, as last refreshed. */
+  status?: Usdt0TransferStatus;
+  /** Page size (max 100, default 20). */
+  take?: number;
+  /** Offset (default 0). */
+  skip?: number;
+}
+
+/** Body for `POST /v1/usdt0/transfers/:id/submit`. */
+export interface SubmitUsdt0TransferOptions {
+  /** The signed transaction envelope (base64 XDR): the one the API built, carrying a signature. */
+  signedXdr: string;
+}
+
+/**
+ * Sent as `X-Record-Token` on the read and submit of one transfer. Required only
+ * when the client uses the shared public key: it is the `publicToken` the create
+ * returned. Every other key ignores it.
+ */
+export interface Usdt0RecordTokenOptions {
+  recordToken?: string;
+}
+
+/** Raw USDT0 quote: what is sent and arrives, the fees and the OFT's limits. */
+export interface Usdt0QuoteData {
+  to: Usdt0Destination;
+  /** The destination network's LayerZero endpoint id. */
+  eid: number;
+  receives: Usdt0Receives;
+  /** The amount asked for. */
+  amount: string;
+  /** Cosmos Pay's plan commission rate, in basis points (0 when the deployment has no fee wrapper). */
+  feeBps: number;
+  /** The commission in USDT0, out of `amount`, rounded down. */
+  feeAmount: string;
+  /** What the OFT takes from the account: `amount` without its dust. */
+  amountSent: string;
+  /** What arrives on the destination network. */
+  amountReceived: string;
+  /** The 7th decimal the OFT cannot carry; it stays in the account. */
+  dust: string;
+  /** LayerZero's messaging fee, in XLM, paid on top of the USDT0. */
+  nativeFee: string;
+  /** What a transfer built now would offer LayerZero, in XLM (`nativeFee` plus 20%, the excess refunded). */
+  nativeFeeLimit: string;
+  /** The smallest amount the OFT accepts, in USDT0. */
+  minAmount: string;
+  /** The largest amount the OFT accepts, in USDT0. */
+  maxAmount: string;
+}
+
+/** Raw USDT0 transfer from Stellar to an EVM network. */
+export interface Usdt0TransferData {
+  /** The transfer's id, used by the read and submit routes. */
+  id: string;
+  status: Usdt0TransferStatus;
+  /** Always mainnet (`public`). */
+  network: string;
+  /** The Stellar account that holds the USDT0, signs the transaction and pays its fees in XLM. */
+  source: string;
+  to: Usdt0Destination;
+  /** The destination network's LayerZero endpoint id. */
+  eid: number;
+  receives: Usdt0Receives;
+  /** The EVM address credited, EIP-55. */
+  recipient: string;
+  /** The amount asked for. */
+  amount: string;
+  /** What the OFT takes from the account: `amount` without its dust. */
+  amountSent: string;
+  /** What arrives, and the on-chain floor: the transaction fails rather than deliver less. */
+  amountReceived: string;
+  /** The dust left in the account (`amount` - `amountSent`). */
+  dust: string;
+  /** LayerZero's quoted messaging fee, in XLM. */
+  nativeFee: string;
+  /** What the transaction offers LayerZero, in XLM: `nativeFee` plus a 20% buffer, the rest refunded. */
+  nativeFeeLimit: string;
+  /** The Stellar network fee, in XLM. */
+  networkFee: string;
+  /** Cosmos Pay's plan commission rate, in basis points. */
+  feeBps: number;
+  /** The commission in USDT0, out of `amount`. */
+  feeAmount: string;
+  /** Where the commission went; null without one. */
+  feeWallet: string | null;
+  /** The unsigned transaction (base64 XDR) to sign. */
+  xdr: string;
+  /** A SEP-7 `tx` link carrying `xdr`. */
+  uri: string;
+  /**
+   * A QR of `uri` as a PNG data URL, or null when the transaction is too large for
+   * one (a Soroban transaction usually is). Absent from list rows.
+   */
+  qr?: string | null;
+  /** The Stellar transaction hash once it reached the network; null while PENDING or EXPIRED. */
+  txHash: string | null;
+  /** LayerZero's message id (0x + 64 hex), once the transaction landed. */
+  guid: string | null;
+  /** The destination network's transaction, once DELIVERED. */
+  destinationTxHash: string | null;
+  /** LayerZero Scan's own status word, verbatim (`INFLIGHT`, `CONFIRMING`, `DELIVERED`, ...). */
+  scanStatus: string | null;
+  /** The transaction on LayerZero Scan, once it reached the network. */
+  scanUrl: string | null;
+  /** Why a FAILED transfer failed. */
+  failureReason: string | null;
+  /** The merchant fee the request named, in USDT0; null without one. */
+  merchantFee: MerchantFeeData | null;
+  /** The Idempotency-Key it was created with, if any. */
+  idempotencyKey: string | null;
+  /** When the transaction's time bounds close: submit refuses it afterwards. */
+  expiresAt: string;
+  /** When it was first seen accepted by the network. */
+  submittedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  /**
+   * Only on the create, and only when the caller is the shared public key: this
+   * record's read token, to send as `X-Record-Token` when reading or submitting it.
+   */
+  publicToken?: string;
+}
+
+/** Raw paginated list of USDT0 transfers, newest first, as last refreshed. */
+export interface Usdt0TransferListData {
+  data: Usdt0TransferData[];
+  total: number;
+  take: number;
+  skip: number;
+}
+
+/** Raw outcome of relaying a signed USDT0 transaction. */
+export interface Usdt0SubmitOutcomeData {
+  /** True when the network accepted the transaction (SUBMITTED, or already DELIVERED). */
+  submitted: boolean;
+  /** The transfer's status after this submission. */
+  status: Usdt0TransferStatus;
+  /** The Stellar transaction hash, once it reached the network. */
+  txHash?: string;
+  /** Why it was not submitted, when `submitted` is false. */
+  reason?: string | null;
+  /** The transfer after this submission. */
+  transfer: Usdt0TransferData;
+}
+
+/** USDT0 on Stellar: the classic asset and its Stellar Asset Contract. */
+export interface Usdt0TokenData {
+  code: string;
+  issuer: string;
+  contract: string;
+}
+
+/** One destination network USDT0 can be sent to from Stellar. */
+export interface Usdt0RouteData {
+  /** The id requests name this network with (`to`). */
+  chain: Usdt0Destination;
+  /** The network's display name. */
+  name: string;
+  /** LayerZero endpoint id. */
+  eid: number;
+  receives: Usdt0Receives;
+}
+
+/** Raw `GET /v1/usdt0/routes`: where USDT0 can go, with the token and OFT a transfer uses. */
+export interface Usdt0RoutesData {
+  /** Always `public`: USDT0 exists on Stellar mainnet only. */
+  network: string;
+  /** True for a prod (mainnet) key; a dev (testnet) key gets `false` and no routes. */
+  available: boolean;
+  token: Usdt0TokenData;
+  /** The LayerZero OFT contract the transaction calls (`send`). */
+  oft: string;
+  /** Stellar mainnet's LayerZero endpoint id. */
+  eid: number;
+  /** The destination networks, Ethereum first and then by name. */
+  routes: Usdt0RouteData[];
 }
