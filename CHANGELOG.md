@@ -2,6 +2,18 @@
 
 All notable changes to @cosmosapp/pay_sdk are documented here.
 Generated from [Conventional Commits](https://www.conventionalcommits.org) by [git-cliff](https://git-cliff.org).
+## [2.3.0] - 2026-11-02
+
+### Features
+- Wrap private payments, USDT0, customer wallets and the activity series (349fd34)
+
+### Bug Fixes
+- Keep the payment stats a customer list carries (1c719c6)
+- Path ids are one encoded segment; sync the spec with server v1.8.6 (af03889)
+
+### Documentation
+- Document private payments, USDT0, customer wallets and the series (a2208c7)
+
 ## [2.2.1] - 2026-11-01
 
 ### Bug Fixes
