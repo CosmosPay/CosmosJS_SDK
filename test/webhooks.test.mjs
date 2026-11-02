@@ -105,3 +105,12 @@ test('client.webhooks.process requires a configured secret', () => {
   // ...but an explicit per-call secret works
   assert.doesNotThrow(() => client.webhooks.process(body, header, { secret: SECRET }));
 });
+
+test('the SDK knows every webhook event type the API lets an endpoint subscribe to', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { WebhookEventType } = await import('../dist/index.js');
+  const spec = JSON.parse(readFileSync(new URL('../openapi/openapi.json', import.meta.url), 'utf8'));
+  const served = spec.components.schemas.CreateWebhookEndpointDto.properties.eventTypes.items.enum;
+  const known = Object.values(WebhookEventType);
+  assert.deepEqual([...known].sort(), [...served].sort());
+});
