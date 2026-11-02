@@ -17,7 +17,7 @@
  *
  * Keep this file in step with the kit when it moves. `signAndSubmitTransaction` and
  * `isPlatformWrapper` are deliberately absent below: they are optional in the kit
- * and Cosmos Wallet implements neither.
+ * and Cosmos Pay Wallet implements neither.
  */
 
 /** `moduleType` values the kit filters and groups by. */
@@ -58,7 +58,7 @@ export interface SwkSignOptions {
 }
 
 /**
- * The kit's `ModuleInterface`, minus the optional members Cosmos Wallet does not
+ * The kit's `ModuleInterface`, minus the optional members Cosmos Pay Wallet does not
  * implement. `TModuleType` exists only so the kit's enum can flow through — see
  * the header.
  */

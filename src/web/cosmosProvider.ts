@@ -1,5 +1,5 @@
 /**
- * Reaching Cosmos Wallet, over either of the two transports it ships.
+ * Reaching Cosmos Pay Wallet, over either of the two transports it ships.
  *
  * Cosmos Pay's own wallet exposes a SEP-43-shaped provider on `window.cosmosWallet`,
  * and it gets there two different ways:
@@ -55,7 +55,7 @@ export interface CosmosProviderOptions {
    */
   provider?: CosmosWalletProvider;
   /**
-   * Origin of a hosted Cosmos Wallet — e.g. `https://wallet.cosmospay.lat`. Set it
+   * Origin of a hosted Cosmos Pay Wallet — e.g. `https://wallet.cosmospay.lat`. Set it
    * to support users who have not installed the extension: the provider script is
    * pulled from that origin on first use, and signing happens in the wallet's own
    * window on its own origin. Leave it unset to require the extension.
@@ -149,7 +149,7 @@ export function loadHostedProvider(
 
 /**
  * The provider to act on: the injected one, the host's, or the hosted build's —
- * in that order. `undefined` when Cosmos Wallet cannot be reached at all.
+ * in that order. `undefined` when Cosmos Pay Wallet cannot be reached at all.
  */
 export async function resolveProvider(
   options: CosmosProviderOptions = {},

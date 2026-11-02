@@ -1,4 +1,4 @@
-// Cosmos Wallet — the SDK's own wallet adapter and its Stellar Wallets Kit module.
+// Cosmos Pay Wallet — the SDK's own wallet adapter and its Stellar Wallets Kit module.
 // Fully offline: a fake `window.cosmosWallet` and a fake `document` stand in for the
 // browser, so no extension, wallet origin or network is touched.
 //
@@ -50,7 +50,7 @@ function fakeProvider(overrides = {}) {
     },
     async signMessage(message, opts) {
       calls.push(['signMessage', message, opts]);
-      return { signedMessage: 'c2lnbmF0dXJl', signerAddress: 'GDRXE2BQUC3AZNPVFSCEZ76NJ3WWL25FYFK6RGZGIEKWE4SOOHSUJUJ6', domain: 'Cosmos Wallet signed message v1' };
+      return { signedMessage: 'c2lnbmF0dXJl', signerAddress: 'GDRXE2BQUC3AZNPVFSCEZ76NJ3WWL25FYFK6RGZGIEKWE4SOOHSUJUJ6', domain: 'Cosmos Pay Wallet signed message v1' };
     },
     ...overrides,
   };
@@ -114,7 +114,7 @@ test('the module identifies itself the way the kit renders it', () => {
   const module = new CosmosWalletModule();
   assert.equal(module.productId, COSMOS_WALLET_ID);
   assert.equal(module.productId, 'cosmos-wallet');
-  assert.equal(module.productName, 'Cosmos Wallet');
+  assert.equal(module.productName, 'Cosmos Pay Wallet');
   assert.match(module.productUrl, /^https:\/\//);
   assert.match(module.productIcon, /^https:\/\//);
   // Default is the same string the kit's enum holds, so a consumer who passes
@@ -205,7 +205,7 @@ test('signMessage returns the signature', async () => {
 });
 
 test('signAuthEntry refuses in the kit’s own vocabulary', async () => {
-  // Cosmos Wallet cannot sign Soroban auth entries. Anything returned instead of a
+  // Cosmos Pay Wallet cannot sign Soroban auth entries. Anything returned instead of a
   // refusal would be a signature the network rejects — discovered by the user
   // rather than by the dapp. `-3` is the code the kit's own modules use.
   const module = new CosmosWalletModule({ provider: fakeProvider() });
@@ -316,7 +316,7 @@ test('the adapter signs through the provider', async () => {
   const provider = fakeProvider();
   const adapter = new CosmosWalletAdapter(provider);
   assert.equal(adapter.id, Wallets.COSMOS);
-  assert.equal(adapter.name, 'Cosmos Wallet');
+  assert.equal(adapter.name, 'Cosmos Pay Wallet');
   assert.equal(await adapter.isAvailable(), true);
   assert.equal(await adapter.getPublicKey({ network: 'testnet' }), ADDRESS);
   const signed = await adapter.signTransaction('AAAA', { networkPassphrase: PASSPHRASES.testnet, network: 'testnet' });
@@ -345,12 +345,12 @@ test('the adapter is registered by default, and detection order is not an accide
   assert.ok(ids.includes(Wallets.COSMOS));
   // LAST, deliberately: auto-detection takes the first available adapter, so
   // putting the first-party wallet at the front would move an existing integration
-  // off Freighter the day its user installs Cosmos Wallet. Preference is opt-in.
+  // off Freighter the day its user installs Cosmos Pay Wallet. Preference is opt-in.
   assert.equal(ids.at(-1), Wallets.COSMOS);
   assert.deepEqual(ids, ['freighter', 'xbull', 'rabet', 'lobstr', 'albedo', 'cosmos']);
 });
 
-test('the registry picks Cosmos Wallet when it is the one that is there', async () => {
+test('the registry picks Cosmos Pay Wallet when it is the one that is there', async () => {
   const registry = new WalletRegistry(defaultAdapters({ cosmos: fakeProvider() }));
   const restore = withWindow(undefined);
   try {

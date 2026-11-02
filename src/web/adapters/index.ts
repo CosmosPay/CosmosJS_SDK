@@ -2,7 +2,7 @@
  * Built-in wallet adapters and the default registration set.
  *
  * Auto-detection order (first available wins): Freighter → xBull → Rabet →
- * LOBSTR → Albedo → Cosmos Wallet. Freighter, xBull and Rabet inject browser globals so they're
+ * LOBSTR → Albedo → Cosmos Pay Wallet. Freighter, xBull and Rabet inject browser globals so they're
  * detected with zero configuration; LOBSTR and Albedo need their library passed
  * in (no reliable global), so they only activate when injected.
  */
@@ -40,7 +40,7 @@ export interface InjectedWallets {
   /** A `@lobstrco/signer-extension-api` module. */
   lobstr?: any;
   /**
-   * A Cosmos Wallet provider, or `{ walletUrl }` to reach the HOSTED wallet when
+   * A Cosmos Pay Wallet provider, or `{ walletUrl }` to reach the HOSTED wallet when
    * the extension is absent (otherwise `window.cosmosWallet`).
    */
   cosmos?: CosmosWalletProvider | CosmosProviderOptions;
@@ -59,7 +59,7 @@ export function defaultAdapters(injected: InjectedWallets = {}): WalletAdapter[]
     new AlbedoAdapter(injected.albedo),
     // Appended LAST on purpose. Auto-detection takes the first available adapter,
     // so putting the first-party wallet at the front would silently move an
-    // existing integration off Freighter the day a user installs Cosmos Wallet.
+    // existing integration off Freighter the day a user installs Cosmos Pay Wallet.
     // A dapp that wants it preferred says so — `pay({ wallet: Wallets.COSMOS })`,
     // or `registry.register(adapter, true)`.
     new CosmosWalletAdapter(injected.cosmos ?? {}),

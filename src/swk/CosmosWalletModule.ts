@@ -1,5 +1,5 @@
 /**
- * Cosmos Wallet as a Stellar Wallets Kit module.
+ * Cosmos Pay Wallet as a Stellar Wallets Kit module.
  *
  * The kit is how most Stellar dapps ask for a signature: they register a list of
  * modules and it renders one button per wallet. A wallet that is not a module is a
@@ -23,7 +23,7 @@
  *
  * TWO TRANSPORTS, ONE MODULE. With the extension installed the provider is already
  * on the page. Without it, pass `walletUrl` and the hosted wallet's provider script
- * is fetched from that origin on first use, so a dapp can offer Cosmos Wallet to
+ * is fetched from that origin on first use, so a dapp can offer Cosmos Pay Wallet to
  * users who have installed nothing:
  *
  * ```ts
@@ -48,7 +48,7 @@ import { SwkModuleType, type IKitError, type SwkModule, type SwkSignOptions } fr
 /** The id a dapp filters or preselects this wallet by. */
 export const COSMOS_WALLET_ID = 'cosmos-wallet';
 
-const PRODUCT_NAME = 'Cosmos Wallet';
+const PRODUCT_NAME = 'Cosmos Pay Wallet';
 const PRODUCT_URL = 'https://github.com/CosmosPay/CosmosPay-Wallet';
 /**
  * Served from the wallet's repository so the module has nothing to host. When this
@@ -136,7 +136,7 @@ export class CosmosWalletModule<TModuleType extends string = string>
     opts?: SwkSignOptions,
   ): Promise<{ signedTxXdr: string; signerAddress?: string }> {
     const provider = await this.provider();
-    // The passphrase is forwarded, not authoritative: Cosmos Wallet parses with its
+    // The passphrase is forwarded, not authoritative: Cosmos Pay Wallet parses with its
     // own network configuration and REFUSES a mismatch, so a caller cannot redirect
     // a signature to another network by naming one. Forwarding it is what turns a
     // wrong-network request into an error the dapp can show.
@@ -164,7 +164,7 @@ export class CosmosWalletModule<TModuleType extends string = string>
   /**
    * Not supported, and reported as such in the kit's own vocabulary.
    *
-   * Cosmos Wallet has no Soroban authorization-entry signing. Anything this could
+   * Cosmos Pay Wallet has no Soroban authorization-entry signing. Anything this could
    * return instead of an error would be a signature the network rejects, discovered
    * by the user rather than by the dapp.
    */
