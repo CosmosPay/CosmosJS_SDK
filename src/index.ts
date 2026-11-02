@@ -44,6 +44,10 @@ export type {
 } from '@/managers/SwapManager';
 export { CrossChainSwapManager } from '@/managers/CrossChainSwapManager';
 export type { CrossChainSwapPage } from '@/managers/CrossChainSwapManager';
+export { Usdt0Manager } from '@/managers/Usdt0Manager';
+export type { Usdt0TransferPage, Usdt0SubmitOutcome } from '@/managers/Usdt0Manager';
+export { PrivatePaymentManager } from '@/managers/PrivatePaymentManager';
+export type { PrivatePaymentPage } from '@/managers/PrivatePaymentManager';
 export { PluginManager } from '@/managers/PluginManager';
 export { DefindexManager } from '@/managers/DefindexManager';
 export { PublicKeyManager } from '@/managers/PublicKeyManager';
@@ -76,6 +80,8 @@ export { Product } from '@/structures/Product';
 export { Swap } from '@/structures/Swap';
 export { ChainSwap } from '@/structures/ChainSwap';
 export { CrossChainSwap } from '@/structures/CrossChainSwap';
+export { Usdt0Transfer } from '@/structures/Usdt0Transfer';
+export { PrivatePayment } from '@/structures/PrivatePayment';
 export { LiquidityOperation } from '@/structures/LiquidityOperation';
 export { Receiver } from '@/structures/Receiver';
 export { Customer } from '@/structures/Customer';
@@ -140,5 +146,7 @@ export {
   ProductKind,
   SwapStatus,
   CrossChainSwapStatus,
+  Usdt0TransferStatus,
+  PrivatePaymentStatus,
 } from '@/types/index';
 export type * from '@/types/index';

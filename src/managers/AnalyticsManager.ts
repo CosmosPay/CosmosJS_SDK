@@ -2,6 +2,8 @@ import type { Client } from '@/client/Client';
 import type { REST } from '@/rest/REST';
 import type {
   AnalyticsBalancesData,
+  AnalyticsSeriesData,
+  AnalyticsSeriesOptions,
   AnalyticsSummaryData,
   ApiLogsData,
   WebhookLogsData,
@@ -25,6 +27,18 @@ export class AnalyticsManager {
   /** Overview metrics: totals, settled volume, webhook health, 30-day series. */
   public summary(): Promise<AnalyticsSummaryData> {
     return this.rest.get<AnalyticsSummaryData>('/summary');
+  }
+
+  /**
+   * Activity per day, week, month or year, with the window before for growth:
+   * payments (with their settled volume in USD), swaps of every kind, liquidity
+   * operations, webhook deliveries and private payments, each in the UTC
+   * buckets of `period` (`day` when omitted).
+   */
+  public series(options: AnalyticsSeriesOptions = {}): Promise<AnalyticsSeriesData> {
+    return this.rest.get<AnalyticsSeriesData>('/summary/series', {
+      query: { period: options.period },
+    });
   }
 
   /** Settled (and pending) amount per asset. */

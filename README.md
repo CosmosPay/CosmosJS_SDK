@@ -81,6 +81,8 @@ console.log(`Paid via ${wallet} from ${account}: ${txHash}`);
 - [Payment intents](#-payment-intents)
 - [Typed assets, wallets & addresses](#-typed-assets-wallets--addresses)
 - [Swaps](#-swaps)
+- [USDT0 (Stellar to EVM networks)](#-usdt0-stellar-to-evm-networks)
+- [Private payments](#-private-payments)
 - [Webhooks](#-webhooks)
 - [Products & customers](#-products--customers)
 - [Analytics & health](#-analytics--health)
@@ -188,13 +190,15 @@ if (outcome.valid) console.log('Settled!', outcome.status);
 | `client.paymentIntents`  | Stellar SEP-7 payment intents     | `createTx` · `createPay` · `fetch` · `list` · `update` · `delete` · `validate` |
 | `client.webhooks`        | Webhook endpoints + deliveries    | `create` · `list` · `fetch` · `rotateSecret` · `ping` · `on(...)` · `process` |
 | `client.products`        | Products / prices                 | `create` · `list` · `fetch` · `update` · `delete` |
-| `client.customers`       | Customers                         | `create` · `list` · `fetch` · `update` · `delete` |
+| `client.customers`       | Customers and their wallets       | `create` · `list` · `fetch` · `update` · `delete` · `addWallet` · `removeWallet` |
 | `client.swaps`           | Same-chain swaps (Stellar DEX, Jupiter, Kuru Flow) | `quote` · `create` · `fetch` · `list` · `submit` |
 | `client.crossChainSwaps` | Swaps between chains (NEAR Intents) | `assets` · `quote` · `create` · `fetch` · `list` · `reportDeposit` |
+| `client.usdt0`           | USDT0 from Stellar to EVM networks (LayerZero, mainnet only) | `routes` · `quote` · `create` · `list` · `fetch` · `submit` |
+| `client.privatePayments` | Private payments, amounts hidden on-chain (Stellar Testnet for now) | `create` · `list` · `fetch` · `config` |
 | `client.plugins`         | Plugins the deployment serves     | `list` · `fetch` · `install` · `uninstall` · `query` · `command` |
 | `client.defindex`        | DeFindex vaults (native plugin)   | `vaults` · `vault` · `balance` · `deposit` · `withdraw` · `submit` |
 | `client.publicKey`       | The shared public API key         | `fetch` |
-| `client.analytics`       | Read-only metrics & logs          | `summary` · `balances` · `apiLogs` · `webhookLogs` |
+| `client.analytics`       | Read-only metrics & logs          | `summary` · `series` · `balances` · `apiLogs` · `webhookLogs` |
 | `client.health`          | Liveness / readiness probes       | `liveness` · `readiness` |
 
 ## 🌐 Web client (browser wallets)
@@ -509,6 +513,57 @@ Keep `x.quoteSignature`: it is NEAR Intents' signature over the quote, what
 settles a dispute. Webhooks: `SWAP_*` for both same-chain managers,
 `CROSS_CHAIN_SWAP_*` here — `client.webhooks.on('crossChainSwapSucceeded', …)`.
 
+## 🪙 USDT0 (Stellar to EVM networks)
+
+`client.usdt0` sends USDT0, Tether's omnichain USDT, from Stellar to an EVM network
+through LayerZero's OFT: Ethereum (`eth`) receives native USDT, every other network
+receives USDT0. Signing works like a swap: the API builds the one Soroban
+transaction, the account that holds the USDT0 signs it, and `submit` relays the
+signed XDR. The holder pays LayerZero's fee and the network fee in XLM. Mainnet
+only: a `dev` key gets `available: false` from `routes()` and
+`400 network_unsupported` from `quote()` and `create()`.
+
+```ts
+const { routes } = await client.usdt0.routes();             // [{ chain: 'eth', name, eid, receives }, ...]
+const quote = await client.usdt0.quote({ to: 'arb', amount: '12.5' }); // persists nothing
+
+const transfer = await client.usdt0.create({
+  source: 'G...', to: 'arb', recipient: '0x5aAe...', amount: '12.5',
+});
+// sign transfer.xdr with the holder's wallet (or open the SEP-7 link transfer.uri)
+await transfer.submit({ signedXdr });
+await transfer.fetch(); // PENDING -> SUBMITTED -> DELIVERED (about 27 minutes), or FAILED / EXPIRED
+
+const page = await client.usdt0.list({ status: 'DELIVERED' }); // Usdt0Transfer[]
+```
+
+The OFT carries 6 decimals, so a 7th decimal of `amount` is `dust` that stays in the
+account. See [`llms/17-usdt0.md`](./llms/17-usdt0.md) for the fees, the shared public
+key's `publicToken` and every field.
+
+## 🔒 Private payments
+
+`client.privatePayments` creates and reads payments whose amount is hidden on-chain:
+priced in XLM and paid with confidential transfers on Cosmos Pay's confidential token.
+They run on **Stellar Testnet only for now** and cost a **0.18% commission per
+payment**, taken from `amount` (`amount` = `netAmount` + `feeAmount`). The
+recipient must already hold a confidential account on the token
+(`400 recipient_not_registered` otherwise). The payer completes the payment in the
+private checkout, which proves the confidential transfers in their browser.
+
+```ts
+const payment = await client.privatePayments.create({
+  amount: '25.5', recipient: 'G...', description: 'Order #24',
+});
+await payment.fetch(); // payment.status: PENDING -> SUCCEEDED (or EXPIRED)
+
+const page = await client.privatePayments.list({ status: 'SUCCEEDED' }); // PrivatePayment[]
+const config = await client.privatePayments.config(); // the token, registries, auditor id, feeBps, fee account
+```
+
+See [`llms/16-private-payments.md`](./llms/16-private-payments.md) for merchant fees,
+expiry and every field.
+
 ## 🔔 Webhooks
 
 ```ts
@@ -622,9 +677,11 @@ await product.deactivate();
 const customer = await client.customers.create({
   name: 'Acme Inc.',
   email: 'billing@acme.com',
-  account: 'G...',
+  wallets: [{ chain: 'stellar', address: 'G...' }], // up to 20, on Stellar, Solana or Monad
 });
 await customer.edit({ note: 'VIP, net-30' });
+const wallet = await customer.addWallet({ chain: 'solana', address: '7EcD...', label: 'Phantom' });
+await customer.removeWallet(wallet); // or client.customers.removeWallet(customer.id, wallet.id)
 const customers = await client.customers.list(); // includes payment stats
 ```
 
@@ -633,6 +690,7 @@ const customers = await client.customers.list(); // includes payment stats
 ```ts
 const summary  = await client.analytics.summary();   // totals, volume, webhook health, 30-day series
 const balances = await client.analytics.balances();  // settled + pending per asset
+const series   = await client.analytics.series({ period: 'week' }); // day | week | month | year, with the window before
 const apiLogs  = await client.analytics.apiLogs();
 const hookLogs = await client.analytics.webhookLogs();
 

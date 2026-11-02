@@ -215,8 +215,10 @@ One client exposes every resource through its own manager.
 | `client.paymentIntents` | Stellar SEP-7 intents | `createTx` · `createPay` · `fetch` · `list` · `update` · `delete` · `validate` |
 | `client.webhooks` | Endpoints + deliveries + event listener | `create` · `list` · `fetch` · `update` · `delete` · `rotateSecret` · `ping` · `fetchDeliveries` · `redeliver` · `on(...)` · `process` · `createHandler` · `middleware` |
 | `client.products` | Products / prices | `create` · `list` · `fetch` · `update` · `delete` |
-| `client.customers` | Customers | `create` · `list` · `fetch` · `update` · `delete` |
-| `client.analytics` | Read-only metrics | `summary` · `balances` · `apiLogs` · `webhookLogs` |
+| `client.customers` | Customers and their wallets | `create` · `list` · `fetch` · `update` · `delete` · `addWallet` · `removeWallet` |
+| `client.privatePayments` | Private payments (amounts hidden on-chain; Stellar Testnet for now) | `create` · `list` · `fetch` · `config` |
+| `client.usdt0` | USDT0 from Stellar to EVM networks (LayerZero, mainnet only) | `routes` · `quote` · `create` · `list` · `fetch` · `submit` |
+| `client.analytics` | Read-only metrics | `summary` · `series` · `balances` · `apiLogs` · `webhookLogs` |
 | `client.health` | Liveness / readiness | `liveness` · `readiness` |
 
 ## Constructor options
@@ -251,7 +253,7 @@ client.setGatewayCredentials(secret, consumerUsername); // local-dev direct acce
 
 ## Returned objects are "structures"
 
-Manager methods return rich instances (`PaymentIntent`, `WebhookEndpoint`,
+Manager methods return rich instances (`PaymentIntent`, `PrivatePayment`, `Usdt0Transfer`, `WebhookEndpoint`,
 `Product`, `Customer`) that can act on themselves and expose typed accessors —
 e.g. `intent.isPay`, `intent.assetLabel`, `await intent.validate(txHash)`,
 `await endpoint.disable()`. Call `.toJSON()` for the raw payload.
@@ -619,7 +621,10 @@ const customer = await client.customers.create({
   name: 'Acme Inc.',
   email: 'billing@acme.com',  // optional
   alias: 'acme',              // optional
-  account: 'G...',            // optional Stellar account to associate
+  wallets: [                  // optional, up to 20, on Stellar, Solana or Monad
+    { chain: 'stellar', address: 'G...' },
+    { chain: 'solana', address: '7EcD...', label: 'Phantom' },
+  ],
   reference: 'crm_4821',      // optional
 });
 
@@ -634,9 +639,33 @@ for (const c of customers) {
 }
 ```
 
-`Customer` accessors: `id`, `name`, `alias`, `note`, `email`,
-`account`, `reference`, `createdAt`, `updatedAt`, plus list-only stats
-`payments`, `succeeded`, `total` (null outside `list()`).
+`Customer` accessors: `id`, `name`, `alias`, `note`, `email`, `wallets`,
+`account` (deprecated: the first wallet's address), `reference`, `createdAt`,
+`updatedAt`, plus list-only stats `payments`, `succeeded`, `total` (null outside
+`list()`).
+
+### Customer wallets
+
+A customer holds any number of wallets (up to 20) on Stellar, Solana or Monad;
+payment intents paid from any of them count toward the customer. A wallet belongs
+to one customer: one that another of your customers holds answers
+`409 customer_wallet_taken`. `account` on create still works but is deprecated:
+use `wallets`.
+
+```ts
+// On the instance: the wallet is added to (or removed from) customer.wallets too.
+const wallet = await customer.addWallet({ chain: 'monad', address: '0x5aAe...', label: 'Treasury' });
+await customer.removeWallet(wallet);        // or customer.removeWallet(wallet.id)
+
+// On the manager, by id:
+await client.customers.addWallet(customer.id, { chain: 'stellar', address: 'G...' });
+await client.customers.removeWallet(customer.id, 'cw4f0c2a9d...'); // { id, deleted: true }
+```
+
+`addWallet` returns the wallet (`{ id, chain, address, label, createdAt }`); a
+wallet the customer already holds answers as it is. Removing one stops its
+payments counting toward the customer; a later settled payment from it adds it as
+a new automatic customer.
 
 ---
 
@@ -656,6 +685,37 @@ expired, successRate }, volume: [...], webhooks: { endpoints, deliveries, ... } 
 
 `balances()` → `{ data: [{ asset, amount, pending, count }], total }`
 where `amount`/`pending` are decimal strings and `count` is the number of payments.
+
+### Activity series: `series({ period })`
+
+```ts
+const series = await client.analytics.series({ period: 'week' }); // 'day' | 'week' | 'month' | 'year'
+```
+
+Payments, swaps, liquidity operations, webhook deliveries and private payments,
+each grouped into UTC buckets of `period` (weeks start on Monday), with the totals
+of the window and of the window of the same length before it, for growth.
+`day` (the default when omitted) is 30 days, `week` 12 weeks, `month` 12 months,
+`year` 5 years. Every `buckets` array is oldest first and pre-seeded, so a quiet
+bucket is a zero.
+
+```ts
+// {
+//   period,
+//   buckets:  [{ start, count, succeeded, failed, volume, volumeUsd }],   // payment intents
+//   totals:   { count, succeeded, failed, volume, volumeUsd, unpriced, payers },
+//   previous: { count, succeeded, failed, volume, volumeUsd, unpriced },
+//   swaps:      { buckets, totals: { ..., inProgress, byKind: { dex, chain, crossChain, usdt0 } }, previous },
+//   liquidity:  { buckets, totals, previous },
+//   webhooks:   { buckets: [{ start, deliveries, failed }], totals, previous },
+//   zkPayments: { buckets, totals: { ..., fees, feesUsd }, previous }, // private payments, in XLM
+// }
+```
+
+The `volumeUsd` fields value each asset at NEAR Intents' current reference price:
+an indicative figure at today's price, null when those prices could not be read.
+Private payments run on Stellar Testnet only for now, so a production key counts
+none; their field is named `zkPayments` after the API's `/v1/zk-payments` route.
 
 ## Health (public probes) — `client.health`
 
@@ -857,6 +917,9 @@ WebhookEventType    = { PaymentIntentCreated:'PAYMENT_INTENT_CREATED',
                         PaymentIntentDeleted:'PAYMENT_INTENT_DELETED' }
 WebhookDeliveryStatus = { Pending:'PENDING', Succeeded:'SUCCEEDED', Failed:'FAILED' }
 ProductKind         = { Recurring:'recurring', OneTime:'one_time', Link:'link' }
+PrivatePaymentStatus = { Pending:'PENDING', Succeeded:'SUCCEEDED', Expired:'EXPIRED' }
+Usdt0TransferStatus  = { Pending:'PENDING', Submitted:'SUBMITTED', Delivered:'DELIVERED',
+                         Failed:'FAILED', Expired:'EXPIRED' }
 ```
 
 ## Option types (inputs)
@@ -881,8 +944,23 @@ interface ListWebhookDeliveriesOptions { status?: WebhookDeliveryStatus; take?: 
 interface CreateProductOptions { name: string; description?: string; amount?: string; assetCode?: string; kind?: ProductKind; active?: boolean; reference?: string; }
 type      UpdateProductOptions = Partial<CreateProductOptions>;
 
-interface CreateCustomerOptions { name: string; alias?: string; note?: string; email?: string; account?: string; reference?: string; }
-type      UpdateCustomerOptions = Partial<CreateCustomerOptions>;
+interface AddCustomerWalletOptions { chain: 'stellar' | 'solana' | 'monad'; address: string; label?: string; }
+interface CreateCustomerOptions { name: string; alias?: string; note?: string; email?: string;
+                                  wallets?: AddCustomerWalletOptions[]; account?: string /* deprecated */; reference?: string; }
+type      UpdateCustomerOptions = Partial<Omit<CreateCustomerOptions, 'wallets'>>;
+
+interface AnalyticsSeriesOptions { period?: 'day' | 'week' | 'month' | 'year'; }
+
+interface MerchantFeeOptions { bps?: number; fixed?: string; wallet: string; paidBy?: 'recipient' | 'payer'; }
+interface CreatePrivatePaymentOptions { amount: string; recipient: string; description?: string;
+                                        expiresInMinutes?: number; idempotencyKey?: string; merchantFee?: MerchantFeeOptions; }
+interface ListPrivatePaymentsOptions  { status?: PrivatePaymentStatus; take?: number; skip?: number; }
+
+interface QuoteUsdt0Options          { to: Usdt0Destination; amount: string; source?: string; }
+interface CreateUsdt0TransferOptions { source: string; to: Usdt0Destination; recipient: string; amount: string;
+                                       idempotencyKey?: string; merchantFee?: MerchantFeeOptions; }
+interface ListUsdt0TransfersOptions  { status?: Usdt0TransferStatus; take?: number; skip?: number; }
+interface SubmitUsdt0TransferOptions { signedXdr: string; }
 ```
 
 ## Entity payloads (outputs)
@@ -895,8 +973,13 @@ type      UpdateCustomerOptions = Partial<CreateCustomerOptions>;
 - `WebhookEvent<T = PaymentIntentData>` — `{ id, type, createdAt, data }`.
 - `ProductData` — `id, name, description, amount, asset, kind, active, reference,
   createdAt, updatedAt`.
-- `CustomerData` — `id, name, alias, note, email, account, reference,
+- `CustomerData`: `id, name, alias, note, email, wallets, account, reference,
   createdAt, updatedAt` (+ list-only `payments, succeeded, total`).
+- `CustomerWalletData`: `id, chain, address, label, createdAt`.
+- `AnalyticsSeriesData`: `period, buckets, totals, previous, swaps, liquidity,
+  webhooks, zkPayments` (see Analytics & health).
+- `PrivatePaymentData`, `PrivatePaymentsConfigData`: see Private payments.
+- `Usdt0QuoteData`, `Usdt0TransferData`, `Usdt0RoutesData`: see USDT0.
 - `AnalyticsBalancesData` — `{ data: { asset, amount, pending, count }[], total }`.
 - `ValidationOutcomeData` — `{ valid, status, reason?, paymentIntent? }`.
 
@@ -1059,3 +1142,168 @@ await x.fetch();               // x.status: AWAITING_DEPOSIT → … → SUCCEED
 Keep `x.quoteSignature`: it is NEAR Intents' signature over the quote, what
 settles a dispute. Webhooks: `SWAP_*` for both same-chain managers,
 `CROSS_CHAIN_SWAP_*` here — `client.webhooks.on('crossChainSwapSucceeded', …)`.
+
+---
+
+# Private payments
+
+`client.privatePayments` creates and reads **private payments**: payments whose
+amount is hidden on-chain. A private payment is priced in XLM and paid with
+confidential transfers on Cosmos Pay's confidential token (which wraps native XLM).
+
+- **Network:** they run on **Stellar Testnet only for now**. On mainnet,
+  `config()` answers `enabled: false`, and the series in
+  `client.analytics.series()` counts none for a production key.
+- **Cost:** a **0.18% commission per payment**, taken from `amount`:
+  `amount` = `netAmount` (what the merchant receives) + `feeAmount` (the
+  commission, rounded up, at least one stroop), paid to Cosmos Pay's fee account.
+- **Recipient:** the merchant's Stellar account must already hold a confidential
+  account on the token, registered under auditor id 0; otherwise `create` answers
+  `400 recipient_not_registered`.
+
+The server SDK creates and reads them with your API key. The **payer** completes
+one in the private checkout, which runs in their browser with no API key and
+proves the confidential transfers itself (net to the merchant, the commission to
+the fee account, and a third transfer when there is a merchant fee).
+
+```ts
+import { PrivatePaymentStatus } from '@cosmosapp/pay_sdk';
+
+const payment = await client.privatePayments.create({
+  amount: '25.5',               // XLM the payer pays in total (up to 7 decimals)
+  recipient: 'G...',            // the merchant, registered on the confidential token
+  description: 'Order #24',     // optional, shown by the checkout (not secret, not on-chain)
+  expiresInMinutes: 60,         // optional, 1 to 10080 (server default 60)
+  idempotencyKey: 'order-24',   // optional, sent as the Idempotency-Key header too
+  // merchantFee: { bps: 150, wallet: 'G...', paidBy: 'recipient' }, // optional, in XLM
+});
+
+payment.amount;      // '25.5'
+payment.netAmount;   // what the merchant receives
+payment.feeAmount;   // the 0.18% commission
+payment.expiresAt;   // Date: every transfer must close before it
+
+// ...the payer pays it in the private checkout...
+await payment.fetch();          // refreshes in place
+payment.status;                 // PENDING, then SUCCEEDED (or EXPIRED)
+payment.isSucceeded;            // payer, paymentTxHash, feeTxHash, settledAt are set
+
+const page = await client.privatePayments.list({
+  status: PrivatePaymentStatus.Succeeded, take: 20, skip: 0,
+}); // { items: PrivatePayment[], total, take, skip }, newest first
+
+const one = await client.privatePayments.fetch('cmh4x2k9a0001l70g8v5q3z2w');
+```
+
+`status` reads as it is now: a `PENDING` payment past `expiresAt` reads (and
+filters) as `EXPIRED`, and can still settle with transfers that closed in time.
+Only payments on the key's network are listed (`dv_` key: testnet, `prod_`: mainnet).
+
+## The network's setup: `config()`
+
+```ts
+const config = await client.privatePayments.config();
+// {
+//   enabled, network, rpcUrl, networkPassphrase,
+//   token: { contractId, symbol, decimals, underlying, deployedAtLedger } | null,
+//   verifier, auditorRegistry, auditorId, feeBps /* 18 = 0.18% */, feeAccount,
+// }
+```
+
+What a dashboard needs to set a merchant up on the confidential token (register,
+read the balance, withdraw). Everything in it is public on-chain data or a public
+URL. When `enabled` is false, every field but `network`, `networkPassphrase`,
+`auditorId` and `feeBps` is null.
+
+## `PrivatePayment` accessors
+
+`id`, `status`, `network`, `tokenContract`, `amount`, `netAmount`, `feeAmount`,
+`feeBps`, `recipient`, `feeAccount`, `payer`, `paymentTxHash`, `feeTxHash`,
+`merchantFee`, `merchantFeeTxHash`, `description`, `idempotencyKey`, `expiresAt`,
+`settledAt`, `createdAt`, `updatedAt`, plus `isPending`, `isSucceeded`,
+`isExpired`. The API serves them under `/v1/zk-payments`.
+
+---
+
+# USDT0 (Stellar to EVM networks)
+
+`client.usdt0` sends **USDT0**, Tether's omnichain USDT, from Stellar to an EVM
+network through LayerZero's OFT. Ethereum (`eth`) receives native USDT; every
+other network receives USDT0. Every route takes an EVM recipient (0x + 40 hex).
+
+- **Mainnet only.** A `dev` (testnet) key gets `available: false` and no routes
+  from `routes()`, and `400 network_unsupported` from `quote()` and `create()`.
+- **Fees, in XLM, paid by the holder:** LayerZero's messaging fee (`nativeFee`;
+  the transaction offers `nativeFeeLimit`, 20% more, and the unused part is
+  refunded in the same transaction) and the Stellar network fee (`networkFee`).
+  Any plan commission shows in `feeBps` / `feeAmount` (0 when the deployment has
+  no fee wrapper).
+- **Dust:** the OFT carries 6 decimals and the asset has 7, so a 7th decimal of
+  `amount` is `dust` that stays in the account.
+
+Signing works like a swap: the API builds the one Soroban transaction, the
+account that holds the USDT0 signs it, and `submit` relays the signed XDR. The
+API never holds a key.
+
+```ts
+import { Usdt0TransferStatus } from '@cosmosapp/pay_sdk';
+
+const { available, routes } = await client.usdt0.routes();
+// routes: [{ chain: 'eth', name: 'Ethereum', eid: 30101, receives: 'USDT' }, ...]
+
+const quote = await client.usdt0.quote({ to: 'arb', amount: '12.5' }); // persists nothing
+// { amountSent, amountReceived, dust, nativeFee, nativeFeeLimit, minAmount, maxAmount, ... }
+
+const transfer = await client.usdt0.create({
+  source: 'G...',            // holds the USDT0, signs, pays the XLM fees
+  to: 'arb',                 // a route's `chain`
+  recipient: '0x5aAe...',    // EVM address credited
+  amount: '12.5',
+  idempotencyKey: 'payout-77', // optional, sent as the Idempotency-Key header too
+  // merchantFee: { bps: 50, wallet: 'G...' }, // optional, in USDT0; needs the fee wrapper
+});
+
+// Sign transfer.xdr with the holder's wallet (e.g. Freighter), or open the SEP-7
+// link transfer.uri. transfer.qr is usually null: a Soroban transaction is too
+// large for a QR.
+const outcome = await transfer.submit({ signedXdr });
+// { submitted, status, txHash, reason, transfer }; the instance is updated in place
+
+await transfer.fetch(); // the API refreshes it from the ledger and LayerZero Scan
+transfer.status;        // PENDING -> SUBMITTED -> DELIVERED (or FAILED / EXPIRED)
+transfer.isFinal;       // DELIVERED, FAILED or EXPIRED
+```
+
+Delivery takes about 27 minutes on every route (LayerZero's verifiers wait for
+Stellar confirmations). Once `DELIVERED`, `destinationTxHash` is the destination
+network's transaction; `guid`, `scanStatus` and `scanUrl` follow it on LayerZero
+Scan.
+
+A submit the network refuses leaves the transfer `PENDING` (`submitted: false`,
+`reason`): fix the cause and submit again until `expiresAt`. A transaction that
+fails on the ledger moves it to `FAILED` (`failureReason`).
+
+```ts
+const page = await client.usdt0.list({ status: Usdt0TransferStatus.Delivered, take: 20 });
+// { items: Usdt0Transfer[], total, take, skip }, newest first, as last refreshed
+const one = await client.usdt0.fetch('cm2u0t0transfer0000000001'); // refreshes it
+const raw = await client.usdt0.submit(one.id, { signedXdr });       // manager form
+```
+
+## With the shared public key
+
+A client built with the shared public key (an open-source wallet) gets a
+`publicToken` from `create`. The `Usdt0Transfer` keeps it and sends it as
+`X-Record-Token` on its own `fetch()` and `submit()`; with the manager, pass
+`{ recordToken }` to `fetch(id, { recordToken })` and `submit(id, { signedXdr,
+recordToken })`. Without it the API answers 404. `list()` is refused to the
+shared public key. Any other key ignores the token.
+
+## `Usdt0Transfer` accessors
+
+`id`, `status`, `network`, `source`, `to`, `eid`, `receives`, `recipient`,
+`amount`, `amountSent`, `amountReceived`, `dust`, `nativeFee`, `nativeFeeLimit`,
+`networkFee`, `feeBps`, `feeAmount`, `feeWallet`, `xdr`, `uri`, `qr`, `txHash`,
+`guid`, `destinationTxHash`, `scanStatus`, `scanUrl`, `failureReason`,
+`merchantFee`, `idempotencyKey`, `expiresAt`, `submittedAt`, `createdAt`,
+`updatedAt`, `publicToken`, plus `isPending`, `isDelivered`, `isFinal`.
