@@ -2,6 +2,11 @@
 
 All notable changes to @cosmosapp/pay_sdk are documented here.
 Generated from [Conventional Commits](https://www.conventionalcommits.org) by [git-cliff](https://git-cliff.org).
+## [2.3.1] - 2026-11-02
+
+### Bug Fixes
+- Know the SWAP_EXPIRED, LIQUIDITY_EXPIRED and ZK_PAYMENT_SUCCEEDED events (ec1d68f)
+
 ## [2.3.0] - 2026-11-02
 
 ### Features
