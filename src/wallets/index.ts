@@ -32,6 +32,8 @@ export type { DiscoveredEvmWallet, EvmDiscoveryOptions, EvmReceipt, EvmWaitOptio
 export { discoverSolanaWallets, solanaWallet, bytesToBase58 } from '@/wallets/solana';
 export type { StandardWallet } from '@/wallets/solana';
 export { base64ToBytes, bytesToBase64, toQuantity, erc20TransferData } from '@/wallets/encoding';
+export { parseEip681 } from '@/wallets/eip681';
+export type { Eip681Transaction } from '@/wallets/eip681';
 export type {
   Ecosystem,
   WalletDescriptor,

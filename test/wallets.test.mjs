@@ -18,6 +18,7 @@ import {
   bytesToBase64,
   EvmChains,
   WalletError,
+  parseEip681,
 } from '../dist/wallets/index.js';
 import { PASSPHRASES } from '../dist/web/index.js';
 
@@ -351,6 +352,26 @@ test('encodings', () => {
   assert.equal(bytesToBase58(Uint8Array.from([0, 0, 1])), '112');
   const bytes = Uint8Array.from({ length: 70000 }, (_, i) => i % 256);
   assert.deepEqual(base64ToBytes(bytesToBase64(bytes)), bytes);
+});
+
+test('EIP-681 deposit links as the transaction a wallet sends', () => {
+  const to = '0x1111111111111111111111111111111111111111';
+  const token = '0x754704Bc059F8C67012fEd69BC8A327a5aafb603';
+  assert.deepEqual(parseEip681(`ethereum:${to}@143?value=1500000000000000000`), {
+    chainId: 143,
+    to,
+    value: '0x14d1120d7b160000',
+  });
+  assert.deepEqual(parseEip681(`ethereum:${token}@8453/transfer?address=${to}&uint256=2500000`), {
+    chainId: 8453,
+    to: token,
+    data: erc20TransferData(to, 2500000n),
+  });
+  assert.deepEqual(parseEip681(`ethereum:${to}@1?value=2.5e18`).value, toQuantity('2500000000000000000'));
+  assert.equal(parseEip681(`ethereum:${to}`).chainId, 1);
+  assert.throws(() => parseEip681('web+stellar:pay?destination=G'), /Not an EIP-681/);
+  assert.throws(() => parseEip681(`ethereum:${token}@1/approve?address=${to}&uint256=1`), /Unsupported/);
+  assert.throws(() => parseEip681(`ethereum:${token}@1/transfer?uint256=1`), /no recipient/);
 });
 
 test('isUserRejection', () => {

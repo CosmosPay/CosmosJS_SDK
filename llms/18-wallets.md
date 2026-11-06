@@ -60,6 +60,10 @@ if (swap.approval) {
 const txHash = await wallet.sendTransaction({ from, ...swap.transaction }, EvmChains.monad);
 ```
 
+A cross-chain swap's EVM `depositUri` is an EIP-681 link: `parseEip681(uri)` turns it into the
+transaction (`{ chainId, to, value }` or an ERC-20 `transfer`), so
+`wallet.sendTransaction({ from, ...parseEip681(swap.depositUri) })` pays the deposit.
+
 `wallet.provider` is the wallet's EIP-1193 provider for anything else. `erc20TransferData(to,
 amount)` builds a token transfer's call data; `toQuantity` turns a decimal amount of wei into the
 hex a wallet takes.
