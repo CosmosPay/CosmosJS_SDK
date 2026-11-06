@@ -320,6 +320,17 @@ test('Stellar: a v2 kit (static class): Freighter is Varial, fetchAddress asks t
   assert.equal(error, null);
 });
 
+test('Stellar: an adapter whose probe never answers counts as absent', async () => {
+  const silent = { ...adapter('freighter', 'Freighter', true), isAvailable: () => new Promise(() => {}) };
+  const started = Date.now();
+  const wallets = await discoverStellarWallets({
+    adapters: [silent, adapter('xbull', 'xBull', true)],
+    availabilityTimeoutMs: 30,
+  });
+  assert.deepEqual(wallets.map((w) => w.id), ['stellar:xbull']);
+  assert.ok(Date.now() - started < 1000);
+});
+
 test('Stellar: wallets that inject a provider, each in its own call shape', async () => {
   const win = new EventTarget();
   const calls = [];

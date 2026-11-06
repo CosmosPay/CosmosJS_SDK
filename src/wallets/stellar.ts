@@ -32,6 +32,11 @@ export interface StellarDiscoveryOptions {
   injectedProviders?: boolean;
   /** The window those wallets inject into (default the page's). */
   window?: WalletWindow;
+  /**
+   * How long an adapter has to say it is available (default 2500 ms). An extension that is not
+   * installed may never answer its probe; past this it counts as absent.
+   */
+  availabilityTimeoutMs?: number;
 }
 
 /** The kit names some wallets differently from the adapters: the kit id to the adapter id. */
@@ -94,13 +99,22 @@ function fromKit(kit: StellarWalletsKitLike, wallet: StellarKitWallet): StellarW
   };
 }
 
-async function availableAdapters(adapters: WalletAdapter[]): Promise<WalletAdapter[]> {
+async function availableAdapters(
+  adapters: WalletAdapter[],
+  timeoutMs: number,
+): Promise<WalletAdapter[]> {
   const checks = await Promise.all(
     adapters.map(async (adapter) => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const timeout = new Promise<boolean>((resolve) => {
+        timer = setTimeout(() => resolve(false), timeoutMs);
+      });
       try {
-        return (await adapter.isAvailable()) ? adapter : null;
+        return (await Promise.race([adapter.isAvailable(), timeout])) ? adapter : null;
       } catch {
         return null;
+      } finally {
+        clearTimeout(timer);
       }
     }),
   );
@@ -115,7 +129,10 @@ async function availableAdapters(adapters: WalletAdapter[]): Promise<WalletAdapt
 export async function discoverStellarWallets(
   options: StellarDiscoveryOptions = {},
 ): Promise<StellarWallet[]> {
-  const adapters = await availableAdapters(options.adapters ?? defaultAdapters(options.injected));
+  const adapters = await availableAdapters(
+    options.adapters ?? defaultAdapters(options.injected),
+    options.availabilityTimeoutMs ?? 2500,
+  );
   let kitWallets: StellarKitWallet[] = [];
   const kit = options.kit;
   if (kit) {
