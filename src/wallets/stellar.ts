@@ -1,14 +1,16 @@
 /**
  * Stellar wallets: the SDK's own adapters (Freighter, xBull, Rabet, LOBSTR, Albedo, Cosmos Pay
- * Wallet), plus every wallet of a Stellar Wallets Kit the app passes in (Hana, MetaMask's Stellar
- * Snap, Klever, OneKey, Ledger, WalletConnect...). A wallet both reach is listed once, through the
- * adapter, with the kit's name and icon.
+ * Wallet), the wallets that inject a provider (Hana, Klever, OneKey, Bitget, Cactus Link, D'CENT,
+ * Scopuly), plus every wallet of a Stellar Wallets Kit the app passes in (MetaMask's Stellar Snap,
+ * Ledger, Trezor, WalletConnect...). A wallet several reach is listed once, the first way, with the
+ * kit's name and icon.
  */
 
 import { defaultAdapters, type InjectedWallets } from '@/web/adapters/index';
 import { COSMOS_WALLET_ID } from '@/swk/CosmosWalletModule';
 import { WalletError } from '@/web/errors';
-import { errorMessage } from '@/web/adapters/util';
+import { errorMessage, getWindow } from '@/web/adapters/util';
+import { discoverInjectedStellarWallets } from '@/wallets/stellar-injected';
 import { HORIZON_URLS, PASSPHRASES } from '@/web/network';
 import type { NetworkConfig, StellarNetwork, WalletAdapter } from '@/web/types';
 import type {
@@ -16,6 +18,7 @@ import type {
   StellarSignOptions,
   StellarWallet,
   StellarWalletsKitLike,
+  WalletWindow,
 } from '@/wallets/types';
 
 export interface StellarDiscoveryOptions {
@@ -25,6 +28,10 @@ export interface StellarDiscoveryOptions {
   adapters?: WalletAdapter[];
   /** A Stellar Wallets Kit instance: its wallets join the list. */
   kit?: StellarWalletsKitLike;
+  /** Look for the wallets that inject a provider (default true). */
+  injectedProviders?: boolean;
+  /** The window those wallets inject into (default the page's). */
+  window?: WalletWindow;
 }
 
 /** The kit names some wallets differently from the adapters: the kit id to the adapter id. */
@@ -32,6 +39,7 @@ const KIT_TO_ADAPTER: Record<string, string> = {
   [COSMOS_WALLET_ID]: 'cosmos',
   // Freighter is now Varial: kit v2 lists it as `varial` (v1 as `freighter`).
   varial: 'freighter',
+  BitgetWallet: 'bitget',
 };
 
 function networkConfig(network: StellarNetwork): NetworkConfig {
@@ -101,7 +109,8 @@ async function availableAdapters(adapters: WalletAdapter[]): Promise<WalletAdapt
 
 /**
  * The Stellar wallets this browser can sign with right now: the installed or configured
- * adapters first, in their detection order, then the kit's other available wallets.
+ * adapters first, in their detection order, then the wallets that injected a provider, then the
+ * kit's other available wallets.
  */
 export async function discoverStellarWallets(
   options: StellarDiscoveryOptions = {},
@@ -124,6 +133,16 @@ export async function discoverStellarWallets(
   );
   const wallets = adapters.map((adapter) => fromAdapter(adapter, byAdapter.get(adapter.id)));
   const listed = new Set(adapters.map((adapter) => adapter.id));
+  if (options.injectedProviders !== false) {
+    const win = options.window ?? (getWindow() as WalletWindow | undefined);
+    for (const wallet of discoverInjectedStellarWallets(win)) {
+      const key = wallet.id.slice('stellar:'.length);
+      if (listed.has(key)) continue;
+      listed.add(key);
+      const listing = byAdapter.get(key);
+      wallets.push(listing ? { ...wallet, name: listing.name, icon: listing.icon ?? wallet.icon } : wallet);
+    }
+  }
   for (const wallet of kitWallets) {
     const adapterId = KIT_TO_ADAPTER[wallet.id] ?? wallet.id;
     if (wallet.isAvailable === false || listed.has(adapterId) || !kit) continue;

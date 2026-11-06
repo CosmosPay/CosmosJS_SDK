@@ -26,6 +26,7 @@ import type {
 } from '@/wallets/types';
 
 export { discoverStellarWallets } from '@/wallets/stellar';
+export { discoverInjectedStellarWallets, INJECTED_STELLAR_WALLETS } from '@/wallets/stellar-injected';
 export type { StellarDiscoveryOptions } from '@/wallets/stellar';
 export { discoverEvmWallets, evmWallet } from '@/wallets/evm';
 export type { DiscoveredEvmWallet, EvmDiscoveryOptions, EvmReceipt, EvmWaitOptions } from '@/wallets/evm';
@@ -96,7 +97,9 @@ export async function discoverWallets(options: DiscoverWalletsOptions = {}): Pro
   const want = new Set<Ecosystem>(options.ecosystems ?? ['stellar', 'evm', 'solana']);
   const win = options.window ?? (getWindow() as WalletWindow | undefined);
   const [stellar, evm] = await Promise.all([
-    want.has('stellar') ? discoverStellarWallets(options.stellar) : Promise.resolve([]),
+    want.has('stellar')
+      ? discoverStellarWallets({ window: win, ...options.stellar })
+      : Promise.resolve([]),
     want.has('evm') ? discoverEvmWallets(win, { timeoutMs: options.timeoutMs }) : Promise.resolve([]),
   ]);
   // Solana last: wallets that answered `app-ready` while EVM wallets announced are in by now.

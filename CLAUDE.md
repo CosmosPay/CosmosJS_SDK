@@ -37,8 +37,10 @@ each audience pulls in only its own code.
   (`src/web/WalletRegistry.ts`, `src/web/adapters/`), turns a SEP-7 intent into a signable
   transaction, signs and optionally submits.
 - **`./wallets`** - every wallet in the browser across ecosystems, one shape each
-  (`src/wallets/`): Stellar through `defaultAdapters()` plus an optional Stellar Wallets Kit
-  instance (`stellar.ts`), EVM through EIP-6963 with a `window.ethereum` fallback (`evm.ts`),
+  (`src/wallets/`): Stellar through `defaultAdapters()`, the providers wallets inject
+  (`stellar-injected.ts`: Hana, Klever, OneKey, Bitget, Cactus Link, D'CENT, Scopuly, each in
+  its own call shape) and an optional Stellar Wallets Kit (`stellar.ts`, v1 instance or v2
+  static class; the kit itself is never a dependency: its hard deps carry audit advisories), EVM through EIP-6963 with a `window.ethereum` fallback (`evm.ts`),
   Solana through the Wallet Standard events (`solana.ts`). No wallet library is imported: each
   protocol is spoken directly, so the entry adds no dependency. EVM wallets can only
   `eth_sendTransaction` (no signed transaction comes back), so their `sendTransaction` answers a

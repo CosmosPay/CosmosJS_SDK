@@ -320,6 +320,64 @@ test('Stellar: a v2 kit (static class): Freighter is Varial, fetchAddress asks t
   assert.equal(error, null);
 });
 
+test('Stellar: wallets that inject a provider, each in its own call shape', async () => {
+  const win = new EventTarget();
+  const calls = [];
+  win.hanaWallet = {
+    stellar: {
+      getPublicKey: async () => 'GHANA',
+      signTransaction: async (input) => { calls.push(['hana', input]); return 'HANA_SIGNED'; },
+    },
+  };
+  win.$onekey = {
+    stellar: {
+      getPublicKey: async () => 'GONEKEY',
+      signTransaction: async (xdr, opts) => { calls.push(['onekey', xdr, opts]); return { signedTxXdr: 'ONEKEY_SIGNED' }; },
+    },
+  };
+  win.bitkeep = { stellar: { connect: async () => 'GBITGET', signTransaction: async () => 'BITGET_SIGNED' } };
+  win.scopuly = {
+    isScopuly: true,
+    requestAccess: async () => ({ error: 'User declined access' }),
+    getAddress: async () => ({ address: 'GSCOPULY' }),
+    signTransaction: async () => ({ signedXDR: 'SCOPULY_SIGNED' }),
+  };
+  win.stellar = { provider: 'dcent' };
+  win.dcentStellarProvider = {
+    requestAccess: async () => { throw new Error('no access step here'); },
+    getAddress: async () => ({ address: 'GDCENT' }),
+    signTransaction: async () => ({ signedTxXdr: 'DCENT_SIGNED', signerAddress: 'GDCENT' }),
+  };
+  win.kleverWallet = {}; // the extension without its Stellar side
+  const wallets = await discoverStellarWallets({ adapters: [adapter('freighter', 'Freighter', true)], window: win });
+  assert.deepEqual(
+    wallets.map((w) => [w.id, w.name]),
+    [
+      ['stellar:freighter', 'Freighter'],
+      ['stellar:hana', 'Hana Wallet'],
+      ['stellar:onekey', 'OneKey Wallet'],
+      ['stellar:bitget', 'Bitget Wallet'],
+      ['stellar:dcent', "D'CENT Wallet"],
+      ['stellar:scopuly', 'Scopuly'],
+    ],
+  );
+  const byId = Object.fromEntries(wallets.map((w) => [w.id, w]));
+  assert.equal(await byId['stellar:hana'].connect('public'), 'GHANA');
+  assert.equal(await byId['stellar:hana'].signTransaction('XDR', { network: 'public', address: 'GHANA' }), 'HANA_SIGNED');
+  assert.deepEqual(calls[0], ['hana', { xdr: 'XDR', accountToSign: 'GHANA', networkPassphrase: PASSPHRASES.public }]);
+  assert.equal(await byId['stellar:onekey'].signTransaction('XDR', { network: 'testnet' }), 'ONEKEY_SIGNED');
+  assert.deepEqual(calls[1], ['onekey', 'XDR', { networkPassphrase: PASSPHRASES.testnet, address: undefined }]);
+  assert.equal(await byId['stellar:bitget'].connect('public'), 'GBITGET');
+  assert.equal(await byId['stellar:dcent'].connect('public'), 'GDCENT');
+  assert.equal(await byId['stellar:dcent'].signTransaction('XDR', { network: 'public' }), 'DCENT_SIGNED');
+  assert.equal(await byId['stellar:scopuly'].signTransaction('XDR', { network: 'public' }), 'SCOPULY_SIGNED');
+  const declined = await byId['stellar:scopuly'].connect('public').catch((e) => e);
+  assert.ok(declined instanceof WalletError);
+  assert.equal(declined.wallet, 'scopuly');
+  assert.ok(isUserRejection(declined));
+  assert.equal((await discoverStellarWallets({ adapters: [], window: win, injectedProviders: false })).length, 0);
+});
+
 test('discoverWallets: one call, by ecosystem', async () => {
   const win = new EventTarget();
   announceOn(win, { uuid: 'u', name: 'MetaMask', rdns: 'io.metamask' }, fakeProvider({}));

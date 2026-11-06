@@ -365,7 +365,8 @@ const webClient = new WebClient({ stellarSdk: StellarSdk, freighter });
 
 `@cosmosapp/pay_sdk/wallets` finds every wallet a person can sign with in the browser and gives
 each the same small shape, whatever its ecosystem. It bundles no wallet library: Stellar wallets
-come through the SDK's adapters (plus a Stellar Wallets Kit, when you pass one), EVM wallets
+come through the SDK's adapters and the providers wallets inject (Hana, OneKey, Bitget,
+D'CENT...), plus a Stellar Wallets Kit when you pass one; EVM wallets
 through EIP-6963 (MetaMask, Rabby, Coinbase Wallet...), Solana wallets through Wallet Standard
 (Phantom, Solflare, Backpack...).
 
