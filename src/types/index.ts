@@ -898,13 +898,15 @@ export interface CreateSwapOptions extends QuoteSwapOptions {
 
 /**
  * Body for `POST /v1/swaps/:id/submit`: `signedXdr` for a Stellar swap,
- * `signedTransaction` for a Solana or Monad one.
+ * `signedTransaction` for a Solana or Monad one, or `txHash` for a Monad one a
+ * browser wallet already sent.
  */
 export type SubmitSwapOptions =
   | {
       /** Signed transaction envelope (base64 XDR) to relay to the Stellar network. */
       signedXdr: string;
       signedTransaction?: never;
+      txHash?: never;
     }
   | {
       /**
@@ -913,7 +915,21 @@ export type SubmitSwapOptions =
        */
       signedTransaction: string;
       signedXdr?: never;
-    };
+      txHash?: never;
+    }
+  | ChainSwapTxHashOptions;
+
+/**
+ * Monad only: the hash of the swap transaction the wallet broadcast itself (EVM
+ * browser wallets such as MetaMask only `eth_sendTransaction`, so no signed
+ * transaction comes back). The API checks on-chain that it is the call it built.
+ */
+export interface ChainSwapTxHashOptions {
+  /** `0x`-prefixed 32-byte transaction hash. */
+  txHash: string;
+  signedXdr?: never;
+  signedTransaction?: never;
+}
 
 /** Query for `GET /v1/swaps`. */
 export interface ListSwapsOptions {

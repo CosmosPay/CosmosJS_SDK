@@ -1,7 +1,7 @@
 {
   "name": "@cosmosapp/pay_sdk",
   "version": "2.3.2",
-  "description": "Official SDK for Cosmos Pay, the stablecoin payments API for Stellar, Solana and Monad: payment intents and checkout, webhooks, swaps (same-chain and cross-chain), fiat ramps, products and customers. Payment links on all three (SEP-7, Solana Pay, EIP-681). Includes a browser client for Stellar wallets.",
+  "description": "Official SDK for Cosmos Pay, the stablecoin payments API for Stellar, Solana and Monad: payment intents and checkout, webhooks, swaps (same-chain and cross-chain), fiat ramps, products and customers. Payment links on all three (SEP-7, Solana Pay, EIP-681). Includes a browser client for Stellar wallets and a wallets module that reaches every Stellar, EVM (EIP-6963) and Solana (Wallet Standard) wallet.",
   "keywords": [
     "cosmos-pay",
     "cosmos",
@@ -27,7 +27,11 @@
     "xbull",
     "albedo",
     "rabet",
-    "lobstr"
+    "lobstr",
+    "metamask",
+    "phantom",
+    "eip-6963",
+    "wallet-standard"
   ],
   "license": "Apache-2.0",
   "author": "Cosmos Pay",
@@ -74,6 +78,16 @@
         "default": "./dist/swk/index.cjs"
       }
     },
+    "./wallets": {
+      "import": {
+        "types": "./dist/wallets/index.d.ts",
+        "default": "./dist/wallets/index.js"
+      },
+      "require": {
+        "types": "./dist/wallets/index.d.cts",
+        "default": "./dist/wallets/index.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -92,8 +106,8 @@
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "pretest": "npm run build",
-    "test": "node --test test/client.test.mjs test/rest.test.mjs test/payment-intents.test.mjs test/swaps.test.mjs test/webhooks.test.mjs test/structures.test.mjs test/web.test.mjs test/catalogs.test.mjs test/cosmos-wallet.test.mjs test/liquidity.test.mjs test/ramps.test.mjs test/kyc.test.mjs test/aliases-assets.test.mjs test/cross-chain-swaps.test.mjs test/extensions.test.mjs test/customers-analytics.test.mjs test/private-payments.test.mjs test/usdt0.test.mjs test/openapi.test.mjs",
-    "test:watch": "node --test --watch test/client.test.mjs test/rest.test.mjs test/payment-intents.test.mjs test/swaps.test.mjs test/webhooks.test.mjs test/structures.test.mjs test/web.test.mjs test/catalogs.test.mjs test/cosmos-wallet.test.mjs test/liquidity.test.mjs test/ramps.test.mjs test/kyc.test.mjs test/aliases-assets.test.mjs test/cross-chain-swaps.test.mjs test/extensions.test.mjs test/customers-analytics.test.mjs test/private-payments.test.mjs test/usdt0.test.mjs test/openapi.test.mjs",
+    "test": "node --test test/client.test.mjs test/rest.test.mjs test/payment-intents.test.mjs test/swaps.test.mjs test/webhooks.test.mjs test/structures.test.mjs test/web.test.mjs test/catalogs.test.mjs test/cosmos-wallet.test.mjs test/liquidity.test.mjs test/ramps.test.mjs test/kyc.test.mjs test/aliases-assets.test.mjs test/cross-chain-swaps.test.mjs test/extensions.test.mjs test/customers-analytics.test.mjs test/private-payments.test.mjs test/usdt0.test.mjs test/wallets.test.mjs test/openapi.test.mjs",
+    "test:watch": "node --test --watch test/client.test.mjs test/rest.test.mjs test/payment-intents.test.mjs test/swaps.test.mjs test/webhooks.test.mjs test/structures.test.mjs test/web.test.mjs test/catalogs.test.mjs test/cosmos-wallet.test.mjs test/liquidity.test.mjs test/ramps.test.mjs test/kyc.test.mjs test/aliases-assets.test.mjs test/cross-chain-swaps.test.mjs test/extensions.test.mjs test/customers-analytics.test.mjs test/private-payments.test.mjs test/usdt0.test.mjs test/wallets.test.mjs test/openapi.test.mjs",
     "prepublishOnly": "npm run build",
     "changelog": "npx --yes git-cliff@2 -o CHANGELOG.md",
     "llms": "node scripts/build-llms.mjs",

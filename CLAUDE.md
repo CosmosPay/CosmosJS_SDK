@@ -25,8 +25,9 @@ to npm. `main` is the release branch (every push to it may publish); `dev` is wh
 
 ## Entry points and layout
 
-`tsup.config.ts` builds `src/index.ts`, `src/web/index.ts` and `src/swk/index.ts`, exported as
-`.`, `./web` and `./swk`. They are separate so each audience pulls in only its own code.
+`tsup.config.ts` builds `src/index.ts`, `src/web/index.ts`, `src/swk/index.ts` and
+`src/wallets/index.ts`, exported as `.`, `./web`, `./swk` and `./wallets`. They are separate so
+each audience pulls in only its own code.
 
 - **`.`** — the server SDK. `src/client/Client.ts` owns a `src/rest/REST.ts` and one manager
   per API area in `src/managers/` (all extend `BaseManager.ts`); responses become classes in
@@ -35,6 +36,14 @@ to npm. `main` is the release branch (every push to it may publish); `dev` is wh
 - **`./web`** — the browser client (`src/web/WebClient.ts`): detects the user's Stellar wallet
   (`src/web/WalletRegistry.ts`, `src/web/adapters/`), turns a SEP-7 intent into a signable
   transaction, signs and optionally submits.
+- **`./wallets`** - every wallet in the browser across ecosystems, one shape each
+  (`src/wallets/`): Stellar through `defaultAdapters()` plus an optional Stellar Wallets Kit
+  instance (`stellar.ts`), EVM through EIP-6963 with a `window.ethereum` fallback (`evm.ts`),
+  Solana through the Wallet Standard events (`solana.ts`). No wallet library is imported: each
+  protocol is spoken directly, so the entry adds no dependency. EVM wallets can only
+  `eth_sendTransaction` (no signed transaction comes back), so their `sendTransaction` answers a
+  hash. Node 18 has no global `CustomEvent`: the module and `test/wallets.test.mjs` build events
+  with `Object.assign(new Event(type), { detail })` where needed.
 - **`./swk`** — `CosmosWalletModule` for Stellar Wallets Kit (`src/swk/CosmosWalletModule.ts`).
   It does not import the kit itself, so offering the wallet costs nothing to anyone who skips it.
 
