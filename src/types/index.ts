@@ -72,6 +72,17 @@ export const WebhookEventType = {
   CrossChainSwapExpired: 'CROSS_CHAIN_SWAP_EXPIRED',
   // Private payments (client.privatePayments).
   PrivatePaymentSucceeded: 'ZK_PAYMENT_SUCCEEDED',
+  // Protected payments: held in a contract until the order is delivered, then released.
+  ProtectedPaymentCreated: 'PROTECTED_PAYMENT_CREATED',
+  ProtectedPaymentFunded: 'PROTECTED_PAYMENT_FUNDED',
+  ProtectedPaymentShipped: 'PROTECTED_PAYMENT_SHIPPED',
+  ProtectedPaymentApproved: 'PROTECTED_PAYMENT_APPROVED',
+  ProtectedPaymentReleased: 'PROTECTED_PAYMENT_RELEASED',
+  ProtectedPaymentDisputed: 'PROTECTED_PAYMENT_DISPUTED',
+  ProtectedPaymentResolved: 'PROTECTED_PAYMENT_RESOLVED',
+  ProtectedPaymentDeadlinePassed: 'PROTECTED_PAYMENT_DEADLINE_PASSED',
+  ProtectedPaymentExpired: 'PROTECTED_PAYMENT_EXPIRED',
+  ProtectedPaymentCancelled: 'PROTECTED_PAYMENT_CANCELLED',
 } as const;
 export type WebhookEventType =
   (typeof WebhookEventType)[keyof typeof WebhookEventType];
@@ -384,6 +395,17 @@ export interface WebhookEventDataMap {
   CROSS_CHAIN_SWAP_EXPIRED: CrossChainSwapData;
   /** A private payment the network settled (client.privatePayments). */
   ZK_PAYMENT_SUCCEEDED: PrivatePaymentData;
+  /** A protected payment's step (this SDK does not wrap protected payments yet: `data` is untyped). */
+  PROTECTED_PAYMENT_CREATED: Record<string, unknown>;
+  PROTECTED_PAYMENT_FUNDED: Record<string, unknown>;
+  PROTECTED_PAYMENT_SHIPPED: Record<string, unknown>;
+  PROTECTED_PAYMENT_APPROVED: Record<string, unknown>;
+  PROTECTED_PAYMENT_RELEASED: Record<string, unknown>;
+  PROTECTED_PAYMENT_DISPUTED: Record<string, unknown>;
+  PROTECTED_PAYMENT_RESOLVED: Record<string, unknown>;
+  PROTECTED_PAYMENT_DEADLINE_PASSED: Record<string, unknown>;
+  PROTECTED_PAYMENT_EXPIRED: Record<string, unknown>;
+  PROTECTED_PAYMENT_CANCELLED: Record<string, unknown>;
 }
 
 /** One webhook event of a known type, with `data` typed for it. */
