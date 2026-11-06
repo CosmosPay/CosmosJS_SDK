@@ -1336,7 +1336,7 @@ ecosystem is reached through its own open standard.
 
 | Ecosystem | Reached through | Wallets |
 | --- | --- | --- |
-| `stellar` | the SDK's adapters, plus a Stellar Wallets Kit when passed | Freighter, xBull, Rabet, LOBSTR, Albedo, Cosmos Pay Wallet; with a kit also Hana, HOT, Ledger, WalletConnect... |
+| `stellar` | the SDK's adapters, plus a Stellar Wallets Kit when passed | Freighter (now Varial), xBull, Rabet, LOBSTR, Albedo, Cosmos Pay Wallet; with a kit also Hana, MetaMask (Stellar Snap), Klever, OneKey, Bitget, Ledger, WalletConnect... |
 | `evm` | EIP-6963 announcements, else `window.ethereum` | MetaMask, Rabby, Coinbase Wallet, OKX, Trust, Brave... |
 | `solana` | Wallet Standard (`wallet-standard:register-wallet` / `app-ready`) | Phantom, Solflare, Backpack... |
 
@@ -1360,10 +1360,14 @@ await swap.submit({ signedXdr });
 ```
 
 With a Stellar Wallets Kit, its wallets join the list (a wallet both reach is listed once, through
-the adapter, with the kit's icon):
+the adapter, with the kit's name and icon). Kit v2's static class and a v1 instance both work:
 
 ```ts
-const { stellar } = await discoverWallets({ stellar: { kit } }); // kit: new StellarWalletsKit({...})
+import { StellarWalletsKit } from '@creit.tech/stellar-wallets-kit/sdk';
+import { defaultModules } from '@creit.tech/stellar-wallets-kit/modules/utils';
+
+StellarWalletsKit.init({ modules: defaultModules() });
+const { stellar } = await discoverWallets({ stellar: { kit: StellarWalletsKit } });
 ```
 
 `stellar.injected` passes wallet libraries that have no global (LOBSTR, Albedo, a hosted Cosmos

@@ -1,7 +1,8 @@
 /**
  * Stellar wallets: the SDK's own adapters (Freighter, xBull, Rabet, LOBSTR, Albedo, Cosmos Pay
- * Wallet), plus every wallet of a Stellar Wallets Kit the app passes in (Hana, HOT, Ledger,
- * WalletConnect...). A wallet both reach is listed once, through the adapter, with the kit's icon.
+ * Wallet), plus every wallet of a Stellar Wallets Kit the app passes in (Hana, MetaMask's Stellar
+ * Snap, Klever, OneKey, Ledger, WalletConnect...). A wallet both reach is listed once, through the
+ * adapter, with the kit's name and icon.
  */
 
 import { defaultAdapters, type InjectedWallets } from '@/web/adapters/index';
@@ -10,7 +11,12 @@ import { WalletError } from '@/web/errors';
 import { errorMessage } from '@/web/adapters/util';
 import { HORIZON_URLS, PASSPHRASES } from '@/web/network';
 import type { NetworkConfig, StellarNetwork, WalletAdapter } from '@/web/types';
-import type { StellarSignOptions, StellarWallet, StellarWalletsKitLike } from '@/wallets/types';
+import type {
+  StellarKitWallet,
+  StellarSignOptions,
+  StellarWallet,
+  StellarWalletsKitLike,
+} from '@/wallets/types';
 
 export interface StellarDiscoveryOptions {
   /** Wallet libraries for the adapters that have no global (see `InjectedWallets`). */
@@ -21,20 +27,23 @@ export interface StellarDiscoveryOptions {
   kit?: StellarWalletsKitLike;
 }
 
-/** The kit names some wallets differently from the adapters: the kit id → the adapter id. */
+/** The kit names some wallets differently from the adapters: the kit id to the adapter id. */
 const KIT_TO_ADAPTER: Record<string, string> = {
   [COSMOS_WALLET_ID]: 'cosmos',
+  // Freighter is now Varial: kit v2 lists it as `varial` (v1 as `freighter`).
+  varial: 'freighter',
 };
 
 function networkConfig(network: StellarNetwork): NetworkConfig {
   return { network, passphrase: PASSPHRASES[network], horizonUrl: HORIZON_URLS[network] };
 }
 
-function fromAdapter(adapter: WalletAdapter, icon?: string): StellarWallet {
+function fromAdapter(adapter: WalletAdapter, listed?: StellarKitWallet): StellarWallet {
   return {
     id: `stellar:${adapter.id}`,
-    name: adapter.name,
-    icon: adapter.icon ?? icon,
+    // The kit follows wallets' branding (Freighter became Varial): its name and icon win.
+    name: listed?.name ?? adapter.name,
+    icon: listed?.icon ?? adapter.icon,
     ecosystem: 'stellar',
     connect: (network) => adapter.getPublicKey(networkConfig(network)),
     signTransaction: (xdr, options: StellarSignOptions) =>
@@ -46,10 +55,7 @@ function fromAdapter(adapter: WalletAdapter, icon?: string): StellarWallet {
   };
 }
 
-function fromKit(
-  kit: StellarWalletsKitLike,
-  wallet: { id: string; name: string; icon?: string },
-): StellarWallet {
+function fromKit(kit: StellarWalletsKitLike, wallet: StellarKitWallet): StellarWallet {
   const id = `stellar:${wallet.id}`;
   // One kit serves every wallet it lists, so each call selects its wallet first.
   const run = async <T>(work: () => Promise<T>): Promise<T> => {
@@ -66,7 +72,8 @@ function fromKit(
     name: wallet.name,
     icon: wallet.icon,
     ecosystem: 'stellar',
-    connect: () => run(async () => (await kit.getAddress()).address),
+    connect: () =>
+      run(async () => (await (kit.fetchAddress ? kit.fetchAddress() : kit.getAddress())).address),
     signTransaction: (xdr, options) =>
       run(async () => {
         const { signedTxXdr } = await kit.signTransaction(xdr, {
@@ -100,24 +107,28 @@ export async function discoverStellarWallets(
   options: StellarDiscoveryOptions = {},
 ): Promise<StellarWallet[]> {
   const adapters = await availableAdapters(options.adapters ?? defaultAdapters(options.injected));
-  let kitWallets: Array<{ id: string; name: string; icon?: string; isAvailable?: boolean }> = [];
-  if (options.kit) {
+  let kitWallets: StellarKitWallet[] = [];
+  const kit = options.kit;
+  if (kit) {
     try {
-      kitWallets = await options.kit.getSupportedWallets();
+      kitWallets =
+        (await (kit.refreshSupportedWallets
+          ? kit.refreshSupportedWallets()
+          : kit.getSupportedWallets?.())) ?? [];
     } catch {
       kitWallets = [];
     }
   }
-  const kitIcon = new Map(
-    kitWallets.map((wallet) => [KIT_TO_ADAPTER[wallet.id] ?? wallet.id, wallet.icon] as const),
+  const byAdapter = new Map(
+    kitWallets.map((wallet) => [KIT_TO_ADAPTER[wallet.id] ?? wallet.id, wallet] as const),
   );
-  const wallets = adapters.map((adapter) => fromAdapter(adapter, kitIcon.get(adapter.id)));
+  const wallets = adapters.map((adapter) => fromAdapter(adapter, byAdapter.get(adapter.id)));
   const listed = new Set(adapters.map((adapter) => adapter.id));
   for (const wallet of kitWallets) {
     const adapterId = KIT_TO_ADAPTER[wallet.id] ?? wallet.id;
-    if (wallet.isAvailable === false || listed.has(adapterId) || !options.kit) continue;
+    if (wallet.isAvailable === false || listed.has(adapterId) || !kit) continue;
     listed.add(adapterId);
-    wallets.push(fromKit(options.kit, wallet));
+    wallets.push(fromKit(kit, wallet));
   }
   return wallets;
 }

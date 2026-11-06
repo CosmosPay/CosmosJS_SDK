@@ -117,20 +117,33 @@ export interface SolanaWallet extends WalletDescriptor {
 
 export type AnyWallet = StellarWallet | EvmWallet | SolanaWallet;
 
+/** A wallet as a Stellar Wallets Kit lists it. */
+export interface StellarKitWallet {
+  id: string;
+  name: string;
+  icon?: string;
+  isAvailable?: boolean;
+  type?: string;
+}
+
 /**
- * The parts of a Stellar Wallets Kit instance this module uses (the kit's own API, so any kit
- * built with `new StellarWalletsKit({...})` fits): its wallets, choosing one, and signing.
+ * The parts of a Stellar Wallets Kit this module uses, in the kit's own API: v2's static class
+ * (`StellarWalletsKit` after `StellarWalletsKit.init({ modules })`) and a v1 instance
+ * (`new StellarWalletsKit({...})`) both fit.
  */
 export interface StellarWalletsKitLike {
-  getSupportedWallets(): Promise<
-    Array<{ id: string; name: string; icon?: string; isAvailable?: boolean; type?: string }>
-  >;
+  /** v2: the kit's wallets, each checked for availability. */
+  refreshSupportedWallets?(): Promise<StellarKitWallet[]>;
+  /** v1: the kit's wallets. */
+  getSupportedWallets?(): Promise<StellarKitWallet[]>;
   setWallet(id: string): void;
-  getAddress(params?: { path?: string }): Promise<{ address: string }>;
+  /** v2: asks the selected wallet for its address (`getAddress` only reads the kit's memory). */
+  fetchAddress?(): Promise<{ address: string }>;
+  getAddress(): Promise<{ address: string }>;
   signTransaction(
     xdr: string,
     opts?: { networkPassphrase?: string; address?: string },
-  ): Promise<{ signedTxXdr: string }>;
+  ): Promise<{ signedTxXdr: string; signerAddress?: string }>;
 }
 
 /** The browser objects discovery listens on (the page's `window`, or a stand-in in tests). */

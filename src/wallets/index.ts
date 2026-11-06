@@ -38,6 +38,7 @@ export type {
   StellarWallet,
   StellarSignOptions,
   StellarWalletsKitLike,
+  StellarKitWallet,
   EvmWallet,
   EvmChain,
   EvmTransaction,

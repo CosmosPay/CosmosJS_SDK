@@ -290,6 +290,35 @@ test('Stellar: available adapters, then the kit wallets they do not cover', asyn
   ]);
 });
 
+test('Stellar: a v2 kit (static class): Freighter is Varial, fetchAddress asks the wallet', async () => {
+  const freighter = adapter('freighter', 'Freighter', true);
+  const calls = [];
+  class Kit {
+    static async refreshSupportedWallets() {
+      return [
+        { id: 'varial', name: 'Varial', icon: 'https://kit/varial.png', isAvailable: true },
+        { id: 'metamask', name: 'MetaMask', icon: 'https://kit/metamask.png', isAvailable: true },
+      ];
+    }
+    static setWallet(id) { calls.push(['set', id]); }
+    static async getAddress() { throw { code: -1, message: 'No wallet has been connected.' }; }
+    static async fetchAddress() { calls.push(['fetch', this === Kit]); return { address: 'GSNAP' }; }
+    static async signTransaction() { return { signedTxXdr: 'SNAP_SIGNED', signerAddress: 'GSNAP' }; }
+  }
+  const wallets = await discoverStellarWallets({ adapters: [freighter], kit: Kit });
+  assert.deepEqual(
+    wallets.map((w) => [w.id, w.name, w.icon]),
+    [
+      ['stellar:freighter', 'Varial', 'https://kit/varial.png'],
+      ['stellar:metamask', 'MetaMask', 'https://kit/metamask.png'],
+    ],
+  );
+  assert.equal(await wallets[1].connect('public'), 'GSNAP');
+  assert.deepEqual(calls, [['set', 'metamask'], ['fetch', true]]);
+  const error = await wallets[1].signTransaction('', { network: 'public' }).then(() => null, (e) => e);
+  assert.equal(error, null);
+});
+
 test('discoverWallets: one call, by ecosystem', async () => {
   const win = new EventTarget();
   announceOn(win, { uuid: 'u', name: 'MetaMask', rdns: 'io.metamask' }, fakeProvider({}));
