@@ -348,6 +348,16 @@ test('encodings', () => {
   assert.equal(toQuantity('0x00ff'), '0xff');
   assert.equal(toQuantity(16n), '0x10');
   assert.throws(() => toQuantity('1.5'), /Not an amount of wei/);
+  const max = (1n << 256n) - 1n;
+  assert.equal(toQuantity(max), `0x${'f'.repeat(64)}`);
+  assert.throws(() => toQuantity(max + 1n), /cannot exceed/);
+  assert.throws(() => toQuantity(-1n), /negative/);
+  assert.throws(() => erc20TransferData('0x00000000000000000000000000000000000000AA', max + 1n), /cannot exceed/);
+  assert.throws(() => erc20TransferData('0x00000000000000000000000000000000000000AA', '1.5'), /base units/);
+  assert.throws(
+    () => parseEip681(`ethereum:0x754704Bc059F8C67012fEd69BC8A327a5aafb603@1/transfer?address=0x1111111111111111111111111111111111111111&uint256=${max + 1n}`),
+    /cannot exceed/,
+  );
   assert.equal(bytesToBase58(new TextEncoder().encode('hello world')), 'StV1DL6CwTryKyV');
   assert.equal(bytesToBase58(Uint8Array.from([0, 0, 1])), '112');
   const bytes = Uint8Array.from({ length: 70000 }, (_, i) => i % 256);

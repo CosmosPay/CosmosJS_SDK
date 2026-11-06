@@ -21,21 +21,28 @@ export function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
+/** The largest value an EVM word (uint256) holds. */
+const MAX_UINT256 = (1n << 256n) - 1n;
+
+/** `value` as a uint256, or a RangeError: a larger number cannot be encoded, a smaller is not one. */
+function uint256(value: bigint): bigint {
+  if (value < 0n) throw new RangeError('An EVM amount cannot be negative');
+  if (value > MAX_UINT256) throw new RangeError('An EVM amount cannot exceed 2^256 - 1');
+  return value;
+}
+
 /**
  * A wei amount as an EVM wallet takes it: 0x-hex. Accepts a decimal string of wei, a 0x-hex
- * string, a bigint or a safe integer.
+ * string, a bigint or a safe integer, from 0 to 2^256 - 1.
  */
 export function toQuantity(value: string | number | bigint): string {
-  if (typeof value === 'string' && /^0x[0-9a-fA-F]+$/.test(value)) {
-    return `0x${BigInt(value).toString(16)}`;
-  }
-  if (typeof value === 'string' && !/^\d+$/.test(value)) {
+  if (typeof value === 'string' && !/^0x[0-9a-fA-F]+$/.test(value) && !/^\d+$/.test(value)) {
     throw new TypeError(`Not an amount of wei: "${value}"`);
   }
   if (typeof value === 'number' && !Number.isSafeInteger(value)) {
     throw new TypeError(`Not a safe integer amount of wei: ${value}`);
   }
-  return `0x${BigInt(value).toString(16)}`;
+  return `0x${uint256(BigInt(value)).toString(16)}`;
 }
 
 /**
@@ -44,8 +51,10 @@ export function toQuantity(value: string | number | bigint): string {
  */
 export function erc20TransferData(to: string, amount: string | bigint): string {
   if (!/^0x[0-9a-fA-F]{40}$/.test(to)) throw new TypeError(`Not an EVM address: "${to}"`);
-  const value = typeof amount === 'bigint' ? amount : BigInt(amount);
-  if (value < 0n) throw new RangeError('A transfer amount cannot be negative');
+  if (typeof amount === 'string' && !/^\d+$/.test(amount)) {
+    throw new TypeError(`Not an amount in base units: "${amount}"`);
+  }
+  const value = uint256(typeof amount === 'bigint' ? amount : BigInt(amount));
   const word = (hex: string) => hex.padStart(64, '0');
   return `0xa9059cbb${word(to.slice(2).toLowerCase())}${word(value.toString(16))}`;
 }
