@@ -219,6 +219,27 @@ test('a ChainSwap submits signedTransaction and patches itself from the outcome'
   assert.equal(swap.txHash, '5VER');
 });
 
+test('a Monad ChainSwap a browser wallet sent reports its txHash', async () => {
+  const hash = `0x${'ab'.repeat(32)}`;
+  const { client, fetch } = makeClient((url) =>
+    url.endsWith('/submit')
+      ? {
+          submitted: true,
+          status: 'SUBMITTED',
+          txHash: hash,
+          swap: fakeChainSwap({ id: 'cs_2', chain: 'monad', provider: 'kuru', status: 'SUBMITTED', txHash: hash }),
+        }
+      : fakeChainSwap({ id: 'cs_2', chain: 'monad', provider: 'kuru' }),
+  );
+
+  const swap = await client.swaps.fetch('cs_2');
+  const outcome = await swap.submit({ txHash: hash });
+
+  assert.deepEqual(fetch.calls[1].body, { txHash: hash });
+  assert.equal(outcome.txHash, hash);
+  assert.equal(swap.txHash, hash);
+});
+
 // ── client.crossChainSwaps ──────────────────────────────────────────────────
 
 test('assets unwraps the list; quote is a plain object', async () => {

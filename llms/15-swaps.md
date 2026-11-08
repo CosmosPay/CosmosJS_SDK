@@ -29,6 +29,8 @@ await sol.submit({ signedTransaction });
 const mon = await client.swaps.create({ chain: 'monad', amount: '10', sourceAssetCode: 'MON',
   destAssetCode: '0x754704bc059f8c67012fed69bc8a327a5aafb603', source: evmWallet });
 if (mon.approval) await wallet.sendTransaction(mon.approval);
+// A browser wallet (MetaMask...) sends the swap itself: report its hash instead.
+// await mon.submit({ txHash }); see @cosmosapp/pay_sdk/wallets
 
 const page = await client.swaps.list({ chain: 'solana' }); // ChainSwap[]
 ```

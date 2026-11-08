@@ -99,12 +99,13 @@ export class ChainSwap extends Base<ChainSwapData> {
   }
 
   /**
-   * Relay the signed transaction. Mutates this instance from the refreshed
-   * swap in the outcome and returns the outcome.
+   * Relay the signed transaction (`{ signedTransaction }`), or, on Monad, report
+   * the one the wallet already sent (`{ txHash }`). Mutates this instance from
+   * the refreshed swap in the outcome and returns the outcome.
    */
-  public async submit(options: {
-    signedTransaction: string;
-  }): Promise<ChainSwapSubmitOutcome> {
+  public async submit(
+    options: { signedTransaction: string } | { txHash: string },
+  ): Promise<ChainSwapSubmitOutcome> {
     const outcome = (await this.client.swaps.submit(
       this.id,
       options,

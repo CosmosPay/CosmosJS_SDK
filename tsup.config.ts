@@ -4,7 +4,8 @@ export default defineConfig({
   // Three entries: the server SDK (default), the browser/web client, and the
   // Stellar Wallets Kit module — separate so a dapp that only wants the kit module
   // does not pull the payments client in with it.
-  entry: ['src/index.ts', 'src/web/index.ts', 'src/swk/index.ts'],
+  // The fourth, `wallets`, finds every wallet a person can sign with (Stellar, EVM, Solana).
+  entry: ['src/index.ts', 'src/web/index.ts', 'src/swk/index.ts', 'src/wallets/index.ts'],
   format: ['esm', 'cjs'],
   dts: true,
   sourcemap: true,
