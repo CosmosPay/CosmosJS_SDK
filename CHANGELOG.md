@@ -2,6 +2,25 @@
 
 All notable changes to @cosmosapp/pay_sdk are documented here.
 Generated from [Conventional Commits](https://www.conventionalcommits.org) by [git-cliff](https://git-cliff.org).
+## [2.4.0] - 2026-11-08
+
+### Features
+- Every Stellar, EVM and Solana wallet behind one shape, and Monad submit by txHash (a61f570)
+- Stellar Wallets Kit v2 (static class, fetchAddress), Freighter listed as Varial (41b5e9b)
+- ParseEip681 turns an EVM deposit link into the wallet's transaction (e1043c3)
+- Hana, Klever, OneKey, Bitget, Cactus Link, D'CENT and Scopuly without the kit (d32d876)
+
+### Bug Fixes
+- EVM amounts are bounded to uint256 (d03c441)
+- An adapter that never answers its availability probe counts as absent (1b64f04)
+- The server's current spec, protected payment events, unwrapped routes listed (f8c1287)
+
+### Miscellaneous
+- Bump the minor-and-patch group across 1 directory with 3 updates (f8f9107)
+
+### Documentation
+- Brand banner and no emojis (#36) (a7622af)
+
 ## [2.3.2] - 2026-11-02
 
 ### Bug Fixes
