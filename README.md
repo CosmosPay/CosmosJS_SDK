@@ -1,6 +1,10 @@
+<p align="center">
+  <a href="https://www.npmjs.com/package/@cosmosapp/pay_sdk"><img src=".github/assets/banner.png" width="100%" alt="Cosmos Pay JavaScript and TypeScript SDK: @cosmosapp/pay_sdk, for the server and the browser."></a>
+</p>
+
 <div align="center">
 
-# 🪐 @cosmosapp/pay_sdk
+# @cosmosapp/pay_sdk
 
 **The official JavaScript / TypeScript SDK for [Cosmos Pay](https://cosmospay.lat), the stablecoin payments API for Stellar, Solana and Monad**
 
@@ -50,52 +54,52 @@ const { txHash, account, wallet } = await webClient.pay(intent);
 console.log(`Paid via ${wallet} from ${account}: ${txHash}`);
 ```
 
-> 📚 **Runnable examples** for every feature live in [`examples/`](./examples)
+> **Runnable examples** for every feature live in [`examples/`](./examples)
 > (one file per area — payment intents, web client, webhooks, products, customers,
 > analytics, errors, …). See [`examples/README.md`](./examples/README.md).
 >
-> 🤖 **Using an AI assistant?** Atomic, AI-readable docs live in the isolated
+> **Using an AI assistant?** Atomic, AI-readable docs live in the isolated
 > [`llms/`](./llms) folder ([`llms.txt`](./llms/llms.txt) index + per-topic files +
 > a combined [`llms-full.txt`](./llms/llms-full.txt)) — point your tool at them to
 > make integrating the SDK much easier. After install they're at
 > `node_modules/@cosmosapp/pay_sdk/llms/`.
 
-## ✨ Features
+## Features
 
-- ✅ **TypeScript & JavaScript** — full typings, works in both **CJS** and **ESM**.
-- ✅ **Zero runtime dependencies** — native `fetch` + `node:crypto`, nothing else.
-- ✅ **Atomic API** — one client, one manager per resource: `client.paymentIntents`, `client.webhooks`, …
-- ✅ **Self-acting structures** — `intent.validate()`, `endpoint.rotateSecret()`, `product.deactivate()`.
-- ✅ **Built-in webhook signature verification** + ready-made `http` / Express handlers.
-- ✅ **Resilient by default** — automatic retries, timeouts and structured errors.
-- ✅ **Browser web client** — auto-detects Freighter, xBull, Rabet, LOBSTR & Albedo, builds the
+- **TypeScript & JavaScript** — full typings, works in both **CJS** and **ESM**.
+- **Zero runtime dependencies** — native `fetch` + `node:crypto`, nothing else.
+- **Atomic API** — one client, one manager per resource: `client.paymentIntents`, `client.webhooks`, …
+- **Self-acting structures** — `intent.validate()`, `endpoint.rotateSecret()`, `product.deactivate()`.
+- **Built-in webhook signature verification** + ready-made `http` / Express handlers.
+- **Resilient by default** — automatic retries, timeouts and structured errors.
+- **Browser web client** — auto-detects Freighter, xBull, Rabet, LOBSTR & Albedo, builds the
   transaction from the SEP-7 response and signs it. Agnostic — you never pass a provider.
 
-## 📑 Table of contents
+## Table of contents
 
-- [Installation](#-installation)
-- [Authentication](#-authentication)
-- [Quick start](#-quick-start)
-- [The client at a glance](#-the-client-at-a-glance)
-- [Web client (browser wallets)](#-web-client-browser-wallets)
-- [Wallets: Stellar, EVM and Solana](#-wallets-stellar-evm-and-solana)
-- [Payment intents](#-payment-intents)
-- [Typed assets, wallets & addresses](#-typed-assets-wallets--addresses)
-- [Swaps](#-swaps)
-- [USDT0 (Stellar to EVM networks)](#-usdt0-stellar-to-evm-networks)
-- [Private payments](#-private-payments)
-- [Webhooks](#-webhooks)
-- [Products & customers](#-products--customers)
-- [Analytics & health](#-analytics--health)
-- [Error handling](#-error-handling)
-- [Observability](#-observability)
-- [Configuration reference](#-configuration-reference)
-- [TypeScript](#-typescript)
-- [Running the tests locally](#-running-the-tests-locally)
-- [CI/CD & publishing](#-cicd--publishing)
-- [License](#-license)
+- [Installation](#installation)
+- [Authentication](#authentication)
+- [Quick start](#quick-start)
+- [The client at a glance](#the-client-at-a-glance)
+- [Web client (browser wallets)](#web-client-browser-wallets)
+- [Wallets: Stellar, EVM and Solana](#wallets-stellar-evm-and-solana)
+- [Payment intents](#payment-intents)
+- [Typed assets, wallets & addresses](#typed-assets-wallets--addresses)
+- [Swaps](#swaps)
+- [USDT0 (Stellar to EVM networks)](#usdt0-stellar-to-evm-networks)
+- [Private payments](#private-payments)
+- [Webhooks](#webhooks)
+- [Products & customers](#products--customers)
+- [Analytics & health](#analytics--health)
+- [Error handling](#error-handling)
+- [Observability](#observability)
+- [Configuration reference](#configuration-reference)
+- [TypeScript](#typescript)
+- [Running the tests locally](#running-the-tests-locally)
+- [CI/CD & publishing](#cicd--publishing)
+- [License](#license)
 
-## 📦 Installation
+## Installation
 
 ```bash
 npm install @cosmosapp/pay_sdk
@@ -107,7 +111,7 @@ yarn add @cosmosapp/pay_sdk
 
 Requires **Node.js ≥ 18** (for the global `fetch`). On older runtimes pass a `fetch` polyfill via the `fetch` option.
 
-## 🔑 Authentication
+## Authentication
 
 **You only need your API key.** Everything else — the gateway URL, the API version, and other
 infrastructure details — is part of the SDK's **shared configuration**, maintained by Cosmos Pay
@@ -153,7 +157,7 @@ normal integration never sets them.
 
 </details>
 
-## 🚀 Quick start
+## Quick start
 
 ```ts
 import { Client } from '@cosmosapp/pay_sdk';
@@ -184,7 +188,7 @@ const outcome = await pay.validate('3389e9f0d6b3e3f1c2a1...');
 if (outcome.valid) console.log('Settled!', outcome.status);
 ```
 
-## 🧭 The client at a glance
+## The client at a glance
 
 | Manager                  | Resource                          | Key methods |
 | ------------------------ | --------------------------------- | ----------- |
@@ -202,7 +206,7 @@ if (outcome.valid) console.log('Settled!', outcome.status);
 | `client.analytics`       | Read-only metrics & logs          | `summary` · `series` · `balances` · `apiLogs` · `webhookLogs` |
 | `client.health`          | Liveness / readiness probes       | `liveness` · `readiness` |
 
-## 🌐 Web client (browser wallets)
+## Web client (browser wallets)
 
 The server SDK *creates* intents. The **web client** *completes* them in the user's browser.
 
@@ -337,7 +341,7 @@ The web client can **also call the Cosmos Pay API directly** — creating and va
 the browser — by passing an `apiKey`. This is handy for prototypes, internal tools and other
 **trusted environments**.
 
-> ⚠️ **Not recommended for public/production frontends.** Doing this ships your API key to the
+> **Not recommended for public/production frontends.** Doing this ships your API key to the
 > browser, where anyone can read it. Only enable it when the environment is trusted and the key is
 > safe to expose (e.g. a scoped testnet `dv_` key). For production, **create and validate intents on
 > your server** and let the web client only sign/submit.
@@ -361,7 +365,7 @@ import freighter from '@stellar/freighter-api';
 const webClient = new WebClient({ stellarSdk: StellarSdk, freighter });
 ```
 
-## 👛 Wallets: Stellar, EVM and Solana
+## Wallets: Stellar, EVM and Solana
 
 `@cosmosapp/pay_sdk/wallets` finds every wallet a person can sign with in the browser and gives
 each the same small shape, whatever its ecosystem. It bundles no wallet library: Stellar wallets
@@ -390,7 +394,7 @@ Each wallet has `id` (`stellar:freighter`, `evm:io.metamask`, `solana:phantom`),
 and `ecosystem`. Failures are `WalletError`s; `isUserRejection(error)` tells a declined prompt
 from a real failure. Full guide: [`llms/18-wallets.md`](./llms/18-wallets.md).
 
-## 💳 Payment intents
+## Payment intents
 
 ```ts
 // tx intent (source known → unsigned XDR + tx URI + QR)
@@ -432,7 +436,7 @@ const outcome = await intent.validate('<txHash>');
 Each `PaymentIntent` exposes typed helpers: `isTx`, `isPay`, `isSucceeded`, `isPending`, `assetLabel`,
 and the action methods `fetch()`, `edit()`, `validate()`, `cancel()`, `delete()`.
 
-## 🎨 Typed assets, wallets & addresses
+## Typed assets, wallets & addresses
 
 So you never paste the wrong issuer or a magic string, the SDK ships small **typed, extensible
 catalogs** — and a plain string still works everywhere. These are exported from **both** entry points
@@ -458,7 +462,7 @@ await client.paymentIntents.createPay({ destination: 'G...', amount: '5', assetC
 // Testnet issuers live in TestnetAssets.* (e.g. TestnetAssets.USDC).
 ```
 
-> ⚠️ Issuers are network-specific. `Assets.*` targets **mainnet**; use `TestnetAssets.*` for testnet.
+> **Note:** Issuers are network-specific. `Assets.*` targets **mainnet**; use `TestnetAssets.*` for testnet.
 
 **Wallets** — typed ids instead of magic strings:
 
@@ -484,7 +488,7 @@ import { isStellarAddress } from '@cosmosapp/pay_sdk';
 isStellarAddress('GC...'); // true
 ```
 
-## 🔁 Swaps
+## Swaps
 
 Two managers, split by whether the swap leaves its chain.
 
@@ -545,7 +549,7 @@ Keep `x.quoteSignature`: it is NEAR Intents' signature over the quote, what
 settles a dispute. Webhooks: `SWAP_*` for both same-chain managers,
 `CROSS_CHAIN_SWAP_*` here — `client.webhooks.on('crossChainSwapSucceeded', …)`.
 
-## 🪙 USDT0 (Stellar to EVM networks)
+## USDT0 (Stellar to EVM networks)
 
 `client.usdt0` sends USDT0, Tether's omnichain USDT, from Stellar to an EVM network
 through LayerZero's OFT: Ethereum (`eth`) receives native USDT, every other network
@@ -573,7 +577,7 @@ The OFT carries 6 decimals, so a 7th decimal of `amount` is `dust` that stays in
 account. See [`llms/17-usdt0.md`](./llms/17-usdt0.md) for the fees, the shared public
 key's `publicToken` and every field.
 
-## 🔒 Private payments
+## Private payments
 
 `client.privatePayments` creates and reads payments whose amount is hidden on-chain:
 priced in XLM and paid with confidential transfers on Cosmos Pay's confidential token.
@@ -596,7 +600,7 @@ const config = await client.privatePayments.config(); // the token, registries, 
 See [`llms/16-private-payments.md`](./llms/16-private-payments.md) for merchant fees,
 expiry and every field.
 
-## 🔔 Webhooks
+## Webhooks
 
 ```ts
 // register an endpoint — the secret is returned ONCE
@@ -695,7 +699,7 @@ const event = Webhooks.constructEvent(
 `client.webhooks.process(rawBody, header, { secret })` does the same and emits the event to your
 `on(...)` listeners.
 
-## 🛍️ Products & customers
+## Products & customers
 
 ```ts
 const product = await client.products.create({
@@ -717,7 +721,7 @@ await customer.removeWallet(wallet); // or client.customers.removeWallet(custome
 const customers = await client.customers.list(); // includes payment stats
 ```
 
-## 📊 Analytics & health
+## Analytics & health
 
 ```ts
 const summary  = await client.analytics.summary();   // totals, volume, webhook health, 30-day series
@@ -730,7 +734,7 @@ await client.health.liveness();   // true
 const ready = await client.health.readiness(); // { status, info, details }
 ```
 
-## ⚠️ Error handling
+## Error handling
 
 ```ts
 import { CosmosPayAPIError, CosmosPayRequestError } from '@cosmosapp/pay_sdk';
@@ -749,7 +753,7 @@ try {
 Transient failures (network errors, `408`, `429`, `5xx`) are retried automatically
 (default 2 retries, honoring `Retry-After`).
 
-## 📡 Observability
+## Observability
 
 The client re-emits REST telemetry:
 
@@ -759,7 +763,7 @@ client.on('response',    ({ status, url }) => {});
 client.on('rateLimited', ({ url }) => {});
 ```
 
-## ⚙️ Configuration reference
+## Configuration reference
 
 ```ts
 new Client({
@@ -778,7 +782,7 @@ new Client({
 });
 ```
 
-## 🧩 TypeScript
+## TypeScript
 
 Everything is fully typed. Import option/entity types and enums directly:
 
@@ -792,7 +796,7 @@ import {
 } from '@cosmosapp/pay_sdk';
 ```
 
-## 🧪 Running the tests locally
+## Running the tests locally
 
 The test suite runs **entirely offline** with the built-in Node test runner (`node:test`) — no network,
 no API key and no extra dependencies. Every HTTP call is served by an injected fake `fetch`, and the
@@ -821,7 +825,7 @@ node --test test/webhooks.test.mjs
 
 > The `pretest` hook builds `dist/` first, so the tests exercise the exact artifact that gets published to npm.
 
-## 🤖 CI/CD & publishing
+## CI/CD & publishing
 
 This repo ships two GitHub Actions workflows under [`.github/workflows/`](./.github/workflows):
 
@@ -832,7 +836,7 @@ This repo ships two GitHub Actions workflows under [`.github/workflows/`](./.git
 
 Publishing is **fully automatic**: there's no Release to create and no tag to push. `release.yml`
 runs on every push to `main`, compares `package.json`'s version against what's already on npm, and
-publishes only when it's new. Unchanged version → the job skips cleanly (no red ❌).
+publishes only when it's new. Unchanged version → the job skips cleanly (no failed run).
 
 ### One-time setup (the GitHub environment variable)
 
@@ -869,14 +873,14 @@ pushing unrelated commits is always safe. Packages ship with
 > Only `dist/`, `README.md` and `LICENSE` are published (`package.json#files`) — source, tests and
 > workflows never ship in the tarball. Verify locally with `npm pack --dry-run`.
 
-## 📄 License
+## License
 
 **[Apache License 2.0](./LICENSE)** — a permissive, OSI-approved open-source license. In short:
 
-- ✅ **Free to use**, including in **commercial** products and services.
-- ✅ **Modify, distribute and sublicense** — you may even sell it.
-- ✅ **Explicit patent grant** from contributors, with patent-retaliation protection.
-- ℹ️ When you redistribute, keep the [`LICENSE`](./LICENSE) + [`NOTICE`](./NOTICE) and note any
+- **Free to use**, including in **commercial** products and services.
+- **Modify, distribute and sublicense** — you may even sell it.
+- **Explicit patent grant** from contributors, with patent-retaliation protection.
+- When you redistribute, keep the [`LICENSE`](./LICENSE) + [`NOTICE`](./NOTICE) and note any
   significant changes you made.
 
 > This is not legal advice.
