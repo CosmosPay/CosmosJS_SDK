@@ -78,6 +78,7 @@ console.log(`Paid via ${wallet} from ${account}: ${txHash}`);
 - [Quick start](#-quick-start)
 - [The client at a glance](#-the-client-at-a-glance)
 - [Web client (browser wallets)](#-web-client-browser-wallets)
+- [Wallets: Stellar, EVM and Solana](#-wallets-stellar-evm-and-solana)
 - [Payment intents](#-payment-intents)
 - [Typed assets, wallets & addresses](#-typed-assets-wallets--addresses)
 - [Swaps](#-swaps)
@@ -360,6 +361,35 @@ import freighter from '@stellar/freighter-api';
 const webClient = new WebClient({ stellarSdk: StellarSdk, freighter });
 ```
 
+## 👛 Wallets: Stellar, EVM and Solana
+
+`@cosmosapp/pay_sdk/wallets` finds every wallet a person can sign with in the browser and gives
+each the same small shape, whatever its ecosystem. It bundles no wallet library: Stellar wallets
+come through the SDK's adapters and the providers wallets inject (Hana, OneKey, Bitget,
+D'CENT...), plus a Stellar Wallets Kit when you pass one; EVM wallets
+through EIP-6963 (MetaMask, Rabby, Coinbase Wallet...), Solana wallets through Wallet Standard
+(Phantom, Solflare, Backpack...).
+
+```ts
+import { discoverWallets, EvmChains, isUserRejection } from '@cosmosapp/pay_sdk/wallets';
+
+const { stellar, evm, solana } = await discoverWallets(); // { stellar: { kit } } adds a kit's wallets
+
+// Stellar: sign the swap's XDR
+const signedXdr = await stellar[0].signTransaction(swap.xdr, { network: 'public', address });
+
+// Solana: sign the base64 transaction, the API relays it
+const signedTransaction = await solana[0].signTransaction(sol.transaction.data);
+
+// Monad: EVM wallets sign and broadcast, and answer the hash. The chain is switched (or added) first.
+const from = await evm[0].connect();
+const txHash = await evm[0].sendTransaction({ from, ...mon.transaction }, EvmChains.monad);
+```
+
+Each wallet has `id` (`stellar:freighter`, `evm:io.metamask`, `solana:phantom`), `name`, `icon`
+and `ecosystem`. Failures are `WalletError`s; `isUserRejection(error)` tells a declined prompt
+from a real failure. Full guide: [`llms/18-wallets.md`](./llms/18-wallets.md).
+
 ## 💳 Payment intents
 
 ```ts
@@ -485,6 +515,8 @@ await sol.submit({ signedTransaction });
 const mon = await client.swaps.create({ chain: 'monad', amount: '10', sourceAssetCode: 'MON',
   destAssetCode: '0x754704bc059f8c67012fed69bc8a327a5aafb603', source: evmWallet });
 if (mon.approval) await wallet.sendTransaction(mon.approval);
+// A browser wallet (MetaMask...) sends the swap itself: report its hash instead.
+// await mon.submit({ txHash }); see @cosmosapp/pay_sdk/wallets
 
 const page = await client.swaps.list({ chain: 'solana' }); // ChainSwap[]
 ```

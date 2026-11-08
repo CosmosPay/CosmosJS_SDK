@@ -124,7 +124,8 @@ export class SwapManager extends BaseManager<Swap | ChainSwap> {
 
   /**
    * Relay a signed swap transaction to its network: `{ signedXdr }` for a
-   * Stellar swap, `{ signedTransaction }` for a Solana or Monad one.
+   * Stellar swap, `{ signedTransaction }` for a Solana or Monad one, or
+   * `{ txHash }` for a Monad one the wallet already sent.
    */
   public async submit(
     id: string,

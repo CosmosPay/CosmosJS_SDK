@@ -38,6 +38,7 @@ The files below are atomic and self-contained — read the ones relevant to the 
 - [Swaps](./15-swaps.md): same-chain swaps (Stellar DEX, Jupiter on Solana, Kuru Flow on Monad) and cross-chain swaps (NEAR Intents)
 - [Private payments](./16-private-payments.md): payments whose amount is hidden on-chain (Stellar Testnet for now, 0.18% commission)
 - [USDT0](./17-usdt0.md): send USDT0 from Stellar to EVM networks through LayerZero (mainnet only)
+- [Wallets](./18-wallets.md): `@cosmosapp/pay_sdk/wallets`, every Stellar, EVM and Solana wallet in the browser behind one shape (connect, sign, send)
 
 ## Optional
 
