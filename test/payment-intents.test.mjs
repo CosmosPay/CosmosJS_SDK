@@ -59,6 +59,17 @@ test('a Monad intent labels its native coin MON', async () => {
   assert.equal(intent.assetLabel, 'MON');
 });
 
+test('an Arc pay intent sends chain arc, and Arc\'s coin is USDC', async () => {
+  const destination = '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed';
+  const { client, fetch } = makeClient(() =>
+    fakeIntent({ kind: 'PAY', chain: 'arc', destination, asset: 'native' }),
+  );
+  const intent = await client.paymentIntents.createPay({ chain: 'arc', destination, amount: '10' });
+  assert.deepEqual(fetch.calls[0].body, { chain: 'arc', destination, amount: '10' });
+  assert.equal(intent.chain, 'arc');
+  assert.equal(intent.assetLabel, 'USDC');
+});
+
 test('createTx POSTs to /payment-intents/tx', async () => {
   const { client, fetch } = makeClient(() =>
     fakeIntent({ kind: 'TX', source: 'G...SRC', xdr: 'AAAA' }),
