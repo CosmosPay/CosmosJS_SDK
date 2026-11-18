@@ -58,7 +58,7 @@ interface ListWebhookDeliveriesOptions { status?: WebhookDeliveryStatus; take?: 
 interface CreateProductOptions { name: string; description?: string; amount?: string; assetCode?: string; kind?: ProductKind; active?: boolean; reference?: string; }
 type      UpdateProductOptions = Partial<CreateProductOptions>;
 
-interface AddCustomerWalletOptions { chain: 'stellar' | 'solana' | 'monad'; address: string; label?: string; }
+interface AddCustomerWalletOptions { chain: 'stellar' | 'solana' | 'monad' | 'arc'; address: string; label?: string; }
 interface CreateCustomerOptions { name: string; alias?: string; note?: string; email?: string;
                                   wallets?: AddCustomerWalletOptions[]; account?: string /* deprecated */; reference?: string; }
 type      UpdateCustomerOptions = Partial<Omit<CreateCustomerOptions, 'wallets'>>;

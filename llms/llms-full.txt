@@ -262,11 +262,11 @@ e.g. `intent.isPay`, `intent.assetLabel`, `await intent.validate(txHash)`,
 
 # Payment intents
 
-`client.paymentIntents` — payment intents on Stellar, Solana and Monad. Two kinds:
+`client.paymentIntents` — payment intents on Stellar, Solana, Monad and Arc. Two kinds:
 
 - **`pay` intent** — no source. The payer's wallet picks the source account.
   Produces a payment link + QR (no XDR): `web+stellar:pay?...` on Stellar (the default),
-  a Solana Pay link with `chain: 'solana'`, an EIP-681 link with `chain: 'monad'`.
+  a Solana Pay link with `chain: 'solana'`, an EIP-681 link with `chain: 'monad'` or `chain: 'arc'`.
 - **`tx` intent** — source known (Stellar only). Produces an unsigned XDR +
   `web+stellar:tx?...` URI + QR.
 
@@ -291,11 +291,11 @@ const pay = await client.paymentIntents.createPay({
   callback: 'url:https://...',  // optional SEP-7 callback for the signed XDR
 });
 
-// pay on Solana or Monad: name the chain; the destination is an address on that chain
+// pay on Solana, Monad or Arc: name the chain; the destination is an address on that chain
 const sol = await client.paymentIntents.createPay({
-  chain: 'solana',              // 'stellar' (default) | 'solana' | 'monad'
-  destination: '7xKX...',       // Solana address (Monad: 0x...)
-  amount: '25',                 // required on Monad
+  chain: 'solana',              // 'stellar' (default) | 'solana' | 'monad' | 'arc'
+  destination: '7xKX...',       // Solana address (Monad, Arc: 0x...)
+  amount: '25',                 // required on Monad and Arc
   assetCode: 'USDC',            // a token by code + issuer (SPL mint / ERC-20 contract)
   assetIssuer: 'EPjF...Dt1v',
 });
@@ -320,7 +320,7 @@ const intent = await client.paymentIntents.fetch('pi_123');
 
 const page = await client.paymentIntents.list({
   status: 'SUCCEEDED', // optional filter (PaymentIntentStatus)
-  chain: 'solana',     // optional: 'stellar' | 'solana' | 'monad'
+  chain: 'solana',     // optional: 'stellar' | 'solana' | 'monad' | 'arc'
   createdFrom: new Date('2026-11-01'), // optional: created at or after (Date or ISO 8601)
   take: 50,            // page size, max 100, default 20
   skip: 0,             // offset
@@ -639,7 +639,7 @@ const customer = await client.customers.create({
   name: 'Acme Inc.',
   email: 'billing@acme.com',  // optional
   alias: 'acme',              // optional
-  wallets: [                  // optional, up to 20, on Stellar, Solana or Monad
+  wallets: [                  // optional, up to 20, on Stellar, Solana, Monad or Arc
     { chain: 'stellar', address: 'G...' },
     { chain: 'solana', address: '7EcD...', label: 'Phantom' },
   ],
@@ -664,7 +664,7 @@ for (const c of customers) {
 
 ### Customer wallets
 
-A customer holds any number of wallets (up to 20) on Stellar, Solana or Monad;
+A customer holds any number of wallets (up to 20) on Stellar, Solana, Monad or Arc;
 payment intents paid from any of them count toward the customer. A wallet belongs
 to one customer: one that another of your customers holds answers
 `409 customer_wallet_taken`. `account` on create still works but is deprecated:
@@ -962,7 +962,7 @@ interface ListWebhookDeliveriesOptions { status?: WebhookDeliveryStatus; take?: 
 interface CreateProductOptions { name: string; description?: string; amount?: string; assetCode?: string; kind?: ProductKind; active?: boolean; reference?: string; }
 type      UpdateProductOptions = Partial<CreateProductOptions>;
 
-interface AddCustomerWalletOptions { chain: 'stellar' | 'solana' | 'monad'; address: string; label?: string; }
+interface AddCustomerWalletOptions { chain: 'stellar' | 'solana' | 'monad' | 'arc'; address: string; label?: string; }
 interface CreateCustomerOptions { name: string; alias?: string; note?: string; email?: string;
                                   wallets?: AddCustomerWalletOptions[]; account?: string /* deprecated */; reference?: string; }
 type      UpdateCustomerOptions = Partial<Omit<CreateCustomerOptions, 'wallets'>>;
@@ -1377,12 +1377,12 @@ const { stellar } = await discoverWallets({ stellar: { kit: StellarWalletsKit } 
 `stellar.injected` passes wallet libraries that have no global (LOBSTR, Albedo, a hosted Cosmos
 Pay Wallet), as in `WebClient`.
 
-## EVM (Monad)
+## EVM (Monad, Arc)
 
 EVM wallets cannot hand a signed transaction back: they sign and broadcast it themselves, so
 `sendTransaction` answers the transaction hash. It switches the wallet to the transaction's chain
 first, adding the chain when the wallet does not know it (`EvmChains.monad`,
-`EvmChains.monadTestnet`).
+`EvmChains.monadTestnet`, `EvmChains.arc`, `EvmChains.arcTestnet`). Arc pays gas in USDC.
 
 ```ts
 const wallet = evm.find((w) => w.rdns === 'io.metamask') ?? evm[0];

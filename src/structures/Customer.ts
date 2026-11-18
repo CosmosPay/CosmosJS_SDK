@@ -15,7 +15,7 @@ export class Customer extends Base<CustomerData> {
   public note!: string | null;
   public email!: string | null;
   /**
-   * The customer's wallets, oldest first, on Stellar, Solana or Monad. Payments
+   * The customer's wallets, oldest first, on Stellar, Solana, Monad or Arc. Payments
    * paid from any of them count toward the customer.
    */
   public wallets!: CustomerWalletData[];

@@ -6,7 +6,7 @@
 
 # @cosmosapp/pay_sdk
 
-**The official JavaScript / TypeScript SDK for [Cosmos Pay](https://cosmospay.lat), the stablecoin payments API for Stellar, Solana and Monad**
+**The official JavaScript / TypeScript SDK for [Cosmos Pay](https://cosmospay.lat), the stablecoin payments API**
 
 **Payment intents** · **webhooks** · **swaps** · **fiat ramps** · **products** · **customers** · **analytics**
 
@@ -21,7 +21,7 @@
 
 ---
 
-Cosmos Pay is a stablecoin payments API (hosted checkout, payment links, swaps and a non-custodial wallet) that settles on Stellar, Solana and Monad. This SDK covers it as follows: payment links (`pay` intents) are created on all three with `chain` (SEP-7 on Stellar, Solana Pay on Solana, EIP-681 on Monad), and `tx` intents (an unsigned XDR for a known payer) are Stellar's; same-chain swaps run on Stellar, Solana and Monad; cross-chain swaps connect all three; and webhooks, ramps, products, customers and analytics are chain-independent. Docs: <https://dev.cosmospay.lat/docs/sdk/server/overview>.
+Cosmos Pay is a stablecoin payments API (hosted checkout, payment links, swaps and a non-custodial wallet) that takes payments from every network it works with. This SDK covers it as follows: payment links (`pay` intents) are created with `chain` (SEP-7 on Stellar, Solana Pay on Solana, EIP-681 on Monad and Arc), and `tx` intents (an unsigned XDR for a known payer) are Stellar's; same-chain swaps run on Stellar, Solana and Monad; cross-chain swaps connect Stellar, Solana and Monad; and webhooks, ramps, products, customers and analytics are chain-independent. Docs: <https://dev.cosmospay.lat/docs/sdk/server/overview>.
 
 Designed to be **atomic**: one `Client`, every resource split into its own manager, and rich
 structure classes that can act on themselves.
@@ -175,7 +175,7 @@ const pay = await client.paymentIntents.createPay({
 console.log(pay.uri); // web+stellar:pay?destination=...
 console.log(pay.qr);  // data:image/png;base64,...
 
-// The same on Solana (a Solana Pay link) or Monad (an EIP-681 link): name the chain
+// The same on Solana (a Solana Pay link), Monad or Arc (an EIP-681 link): name the chain
 const sol = await client.paymentIntents.createPay({
   chain: 'solana',
   destination: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU',
@@ -713,7 +713,7 @@ await product.deactivate();
 const customer = await client.customers.create({
   name: 'Acme Inc.',
   email: 'billing@acme.com',
-  wallets: [{ chain: 'stellar', address: 'G...' }], // up to 20, on Stellar, Solana or Monad
+  wallets: [{ chain: 'stellar', address: 'G...' }], // up to 20, on Stellar, Solana, Monad or Arc
 });
 await customer.edit({ note: 'VIP, net-30' });
 const wallet = await customer.addWallet({ chain: 'solana', address: '7EcD...', label: 'Phantom' });

@@ -8,6 +8,14 @@ import {
 } from '@/types/index';
 import { Base } from '@/structures/Base';
 
+/** Each chain's coin, the label of a `native` asset. Arc's is USDC (its gas coin). */
+const NATIVE_LABELS: Record<PaymentChain, string> = {
+  stellar: 'XLM',
+  solana: 'SOL',
+  monad: 'MON',
+  arc: 'USDC',
+};
+
 /**
  * A Stellar SEP-7 payment intent.
  *
@@ -25,7 +33,7 @@ export class PaymentIntent extends Base<PaymentIntentData> {
   public source!: string | null;
   public destination!: string;
   public amount!: string | null;
-  /** Asset code, or `native` for the chain's coin (XLM, SOL or MON). */
+  /** Asset code, or `native` for the chain's coin (XLM, SOL or MON; Arc's intents name `USDC`). */
   public asset!: string;
   public assetIssuer!: string | null;
   /** Mandatory MEMO_ID. */
@@ -91,10 +99,10 @@ export class PaymentIntent extends Base<PaymentIntentData> {
     return this.status === PaymentIntentStatus.Pending;
   }
 
-  /** Human-readable asset label (the chain's coin for native: `XLM`, `SOL` or `MON`). */
+  /** Human-readable asset label (the chain's coin for native: `XLM`, `SOL`, `MON` or Arc's `USDC`). */
   public get assetLabel(): string {
     if (this.asset && this.asset !== 'native') return this.asset;
-    return this.chain === 'solana' ? 'SOL' : this.chain === 'monad' ? 'MON' : 'XLM';
+    return NATIVE_LABELS[this.chain] ?? 'XLM';
   }
 
   /** Re-fetch this intent from the API, returning a fresh instance. */

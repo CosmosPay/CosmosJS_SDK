@@ -69,6 +69,21 @@ export const EvmChains = {
     rpcUrls: ['https://testnet-rpc.monad.xyz'],
     blockExplorerUrls: ['https://testnet.monadexplorer.com'],
   },
+  /** Arc pays gas in USDC: 18 decimals as the native coin, 6 through its ERC-20 interface. */
+  arc: {
+    chainId: 5042,
+    chainName: 'Arc',
+    nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
+    rpcUrls: ['https://rpc.mainnet.arc.io'],
+    blockExplorerUrls: ['https://explorer.arc.io'],
+  },
+  arcTestnet: {
+    chainId: 5042002,
+    chainName: 'Arc Testnet',
+    nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
+    rpcUrls: ['https://rpc.testnet.arc.io'],
+    blockExplorerUrls: ['https://explorer.testnet.arc.io'],
+  },
 } as const satisfies Record<string, EvmChain>;
 
 export interface DiscoverWalletsOptions {
