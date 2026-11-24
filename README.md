@@ -21,7 +21,7 @@
 
 ---
 
-Cosmos Pay is a stablecoin payments API (hosted checkout, payment links, swaps and a non-custodial wallet) that takes payments from every network it works with. This SDK covers it as follows: payment links (`pay` intents) are created with `chain` (SEP-7 on Stellar, Solana Pay on Solana, EIP-681 on Monad and Arc), and `tx` intents (an unsigned XDR for a known payer) are Stellar's; same-chain swaps run on Stellar, Solana and Monad; cross-chain swaps connect Stellar, Solana and Monad; and webhooks, ramps, products, customers and analytics are chain-independent. Docs: <https://dev.cosmospay.lat/docs/sdk/server/overview>.
+Cosmos Pay is a stablecoin payments API (hosted checkout, payment links, swaps and a non-custodial wallet) that takes payments from every network it works with. This SDK covers it as follows: payment links (`pay` intents) are created with `chain` (SEP-7 on Stellar, Solana Pay on Solana, EIP-681 on Monad and Arc), and `tx` intents (an unsigned XDR for a known payer) are Stellar's; same-chain swaps run on Stellar, Solana and Monad; cross-chain swaps connect more than 30 networks; and webhooks, ramps, products, customers and analytics are chain-independent. Docs: <https://dev.cosmospay.lat/docs/sdk/server/overview>.
 
 Designed to be **atomic**: one `Client`, every resource split into its own manager, and rich
 structure classes that can act on themselves.
