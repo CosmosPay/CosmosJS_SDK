@@ -32,7 +32,7 @@ const customer = await client.customers.create({
   name: 'Acme Inc.',
   email: 'billing@acme.com',  // optional
   alias: 'acme',              // optional
-  wallets: [                  // optional, up to 20, on Stellar, Solana or Monad
+  wallets: [                  // optional, up to 20, on Stellar, Solana, Monad or Arc
     { chain: 'stellar', address: 'G...' },
     { chain: 'solana', address: '7EcD...', label: 'Phantom' },
   ],
@@ -57,7 +57,7 @@ for (const c of customers) {
 
 ### Customer wallets
 
-A customer holds any number of wallets (up to 20) on Stellar, Solana or Monad;
+A customer holds any number of wallets (up to 20) on Stellar, Solana, Monad or Arc;
 payment intents paid from any of them count toward the customer. A wallet belongs
 to one customer: one that another of your customers holds answers
 `409 customer_wallet_taken`. `account` on create still works but is deprecated:

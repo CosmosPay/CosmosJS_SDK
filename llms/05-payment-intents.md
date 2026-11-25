@@ -1,10 +1,10 @@
 # Payment intents
 
-`client.paymentIntents` — payment intents on Stellar, Solana and Monad. Two kinds:
+`client.paymentIntents` — payment intents on Stellar, Solana, Monad and Arc. Two kinds:
 
 - **`pay` intent** — no source. The payer's wallet picks the source account.
   Produces a payment link + QR (no XDR): `web+stellar:pay?...` on Stellar (the default),
-  a Solana Pay link with `chain: 'solana'`, an EIP-681 link with `chain: 'monad'`.
+  a Solana Pay link with `chain: 'solana'`, an EIP-681 link with `chain: 'monad'` or `chain: 'arc'`.
 - **`tx` intent** — source known (Stellar only). Produces an unsigned XDR +
   `web+stellar:tx?...` URI + QR.
 
@@ -29,11 +29,11 @@ const pay = await client.paymentIntents.createPay({
   callback: 'url:https://...',  // optional SEP-7 callback for the signed XDR
 });
 
-// pay on Solana or Monad: name the chain; the destination is an address on that chain
+// pay on Solana, Monad or Arc: name the chain; the destination is an address on that chain
 const sol = await client.paymentIntents.createPay({
-  chain: 'solana',              // 'stellar' (default) | 'solana' | 'monad'
-  destination: '7xKX...',       // Solana address (Monad: 0x...)
-  amount: '25',                 // required on Monad
+  chain: 'solana',              // 'stellar' (default) | 'solana' | 'monad' | 'arc'
+  destination: '7xKX...',       // Solana address (Monad, Arc: 0x...)
+  amount: '25',                 // required on Monad and Arc
   assetCode: 'USDC',            // a token by code + issuer (SPL mint / ERC-20 contract)
   assetIssuer: 'EPjF...Dt1v',
 });
@@ -58,7 +58,7 @@ const intent = await client.paymentIntents.fetch('pi_123');
 
 const page = await client.paymentIntents.list({
   status: 'SUCCEEDED', // optional filter (PaymentIntentStatus)
-  chain: 'solana',     // optional: 'stellar' | 'solana' | 'monad'
+  chain: 'solana',     // optional: 'stellar' | 'solana' | 'monad' | 'arc'
   createdFrom: new Date('2026-11-01'), // optional: created at or after (Date or ISO 8601)
   take: 50,            // page size, max 100, default 20
   skip: 0,             // offset

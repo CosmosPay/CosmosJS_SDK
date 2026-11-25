@@ -65,7 +65,7 @@ export class CustomerManager extends BaseManager<Customer> {
   }
 
   /**
-   * Add a wallet to a customer, on Stellar, Solana or Monad (up to 20 per
+   * Add a wallet to a customer, on Stellar, Solana, Monad or Arc (up to 20 per
    * customer); payments paid from it count toward the customer. A wallet the
    * customer already holds answers as it is; one another of your customers holds
    * is `409 customer_wallet_taken`.

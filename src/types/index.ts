@@ -164,18 +164,18 @@ export interface CreateTxPaymentIntentOptions {
 
 /** Body for `POST /v1/payment-intents/pay`. */
 /** The chain a payment intent settles on. */
-export type PaymentChain = 'stellar' | 'solana' | 'monad';
+export type PaymentChain = 'stellar' | 'solana' | 'monad' | 'arc';
 
 export interface CreatePayPaymentIntentOptions {
   /**
    * Chain the payment settles on: `stellar` (the default, a SEP-7 `web+stellar:pay` link),
-   * `solana` (a Solana Pay link) or `monad` (an EIP-681 link). The network (mainnet or test)
-   * is the API key's, as on every route.
+   * `solana` (a Solana Pay link), `monad` or `arc` (an EIP-681 link). The network (mainnet or
+   * test) is the API key's, as on every route. Monad and Arc links need an `amount`.
    */
   chain?: PaymentChain;
   /**
-   * Payee's account on that chain: a Stellar `G...` account, a Solana address or a Monad
-   * `0x...` address. A registered address-book name also works.
+   * Payee's account on that chain: a Stellar `G...` account, a Solana address or a Monad or
+   * Arc `0x...` address. A registered address-book name also works.
    */
   destination: string;
   /** Amount the destination should receive. Omit to let the user enter it (e.g. donations). */
@@ -185,9 +185,13 @@ export interface CreatePayPaymentIntentOptions {
    * and `assetIssuer` for you. Takes a back seat to explicit code/issuer below.
    */
   asset?: AssetRef;
-  /** Asset code the destination receives. Omit for the chain's coin (XLM, SOL or MON). */
+  /**
+   * Asset code the destination receives. Omit for the chain's coin (XLM, SOL or MON). Arc's coin
+   * is USDC, charged through its 6-decimal ERC-20 interface: omitted, `native` and `USDC` are the
+   * same there.
+   */
   assetCode?: string;
-  /** Who issues a token: the Stellar issuer account, the Solana SPL mint or the Monad ERC-20 contract. */
+  /** Who issues a token: the Stellar issuer account, the Solana SPL mint or the Monad or Arc ERC-20 contract. */
   assetIssuer?: string;
   /** MEMO_ID (numeric uint64) for idempotency + on-chain identification. Auto-generated when omitted. */
   memo?: string;
@@ -458,7 +462,7 @@ export interface ProductData {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** The chains a customer's wallet can be on: the chains payments settle on. */
-export type CustomerWalletChain = 'stellar' | 'solana' | 'monad';
+export type CustomerWalletChain = 'stellar' | 'solana' | 'monad' | 'arc';
 
 /**
  * Body for `POST /v1/customers/:id/wallets`, and one entry of
@@ -470,8 +474,8 @@ export interface AddCustomerWalletOptions {
   chain: CustomerWalletChain;
   /**
    * The address on that chain: a Stellar account (G..., checksum verified), a
-   * Solana address (base58, 32 bytes) or a Monad address (0x + 40 hex, any case;
-   * stored EIP-55 checksummed). Payment intents whose payer (`source`) is this
+   * Solana address (base58, 32 bytes) or a Monad or Arc address (0x + 40 hex, any
+   * case; stored EIP-55 checksummed). Payment intents whose payer (`source`) is this
    * address count toward the customer.
    */
   address: string;
@@ -507,7 +511,7 @@ export interface CustomerWalletData {
   /** Wallet id, used to remove it from the customer. */
   id: string;
   chain: CustomerWalletChain;
-  /** The address, in its chain's stored spelling (EIP-55 on Monad). */
+  /** The address, in its chain's stored spelling (EIP-55 on Monad and Arc). */
   address: string;
   /** A name for the wallet; null when none was given. */
   label?: string | null;
