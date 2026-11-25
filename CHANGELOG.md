@@ -2,6 +2,18 @@
 
 All notable changes to @cosmosapp/pay_sdk are documented here.
 Generated from [Conventional Commits](https://www.conventionalcommits.org) by [git-cliff](https://git-cliff.org).
+## [2.5.0] - 2026-11-25
+
+### Features
+- Arc as a payment and customer wallet chain (7f09be6)
+
+### Miscellaneous
+- Sync with the community server's dev spec (Arc) (f3db022)
+- List the server's new payer and merchant routes the SDK does not wrap (9e88e51)
+
+### Documentation
+- Cross-chain swaps reach more than 30 networks, not three (b3a870e)
+
 ## [2.4.0] - 2026-11-08
 
 ### Features
