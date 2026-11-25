@@ -45,12 +45,12 @@ const { stellar } = await discoverWallets({ stellar: { kit: StellarWalletsKit } 
 `stellar.injected` passes wallet libraries that have no global (LOBSTR, Albedo, a hosted Cosmos
 Pay Wallet), as in `WebClient`.
 
-## EVM (Monad)
+## EVM (Monad, Arc)
 
 EVM wallets cannot hand a signed transaction back: they sign and broadcast it themselves, so
 `sendTransaction` answers the transaction hash. It switches the wallet to the transaction's chain
 first, adding the chain when the wallet does not know it (`EvmChains.monad`,
-`EvmChains.monadTestnet`).
+`EvmChains.monadTestnet`, `EvmChains.arc`, `EvmChains.arcTestnet`). Arc pays gas in USDC.
 
 ```ts
 const wallet = evm.find((w) => w.rdns === 'io.metamask') ?? evm[0];

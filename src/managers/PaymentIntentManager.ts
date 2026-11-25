@@ -54,7 +54,7 @@ export class PaymentIntentManager extends BaseManager<PaymentIntent> {
 
   /**
    * Create a `pay` intent (no source → a payment link + QR, no XDR): SEP-7 on Stellar (the
-   * default), Solana Pay with `chain: 'solana'`, EIP-681 with `chain: 'monad'`.
+   * default), Solana Pay with `chain: 'solana'`, EIP-681 with `chain: 'monad'` or `'arc'`.
    */
   public async createPay(
     options: CreatePayPaymentIntentOptions,
